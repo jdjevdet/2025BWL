@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users, ChevronUp, ChevronDown, X } from 'lucide-react';
-// Import Firebase and your configuration
-// You will need to create a firebase.js file with your project's config
-import { db, storage } from './firebase'; // Assuming you have a firebase.js file
-import { collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+// Import Firebase and your configuration
+import { db, storage } from './firebase'; // Make sure your firebase.js is set up correctly
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const AddMatchForm = ({ eventId, onAddMatch }) => {
     const [newMatch, setNewMatch] = useState({ title: '', options: ['', ''] });
-  
+
     const handleAddMatch = () => {
       onAddMatch(eventId, newMatch);
       setNewMatch({ title: '', options: ['', ''] }); // Reset form after submission
     };
-  
+
     return (
       <div className="mt-4 bg-black p-4 rounded-lg border border-gray-800">
         <h5 className="text-white font-semibold mb-3">Add New Match</h5>
@@ -55,15 +54,15 @@ const AddMatchForm = ({ eventId, onAddMatch }) => {
         </div>
       </div>
     );
-  };
+};
 
-const EventEditorCard = ({ 
-    event, 
-    isEditing, 
-    onSave, 
-    onSetEditing, 
-    onDelete, 
-    onUpdateEvent, 
+const EventEditorCard = ({
+    event,
+    isEditing,
+    onSave,
+    onSetEditing,
+    onDelete,
+    onUpdateEvent,
     onAddMatch,
     animationDelay,
     isMinimized,
@@ -82,15 +81,19 @@ const EventEditorCard = ({
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            const storageRef = ref(storage, `events/${event.id}/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-            setLocalData(prev => ({ ...prev, bannerImage: downloadURL }));
+            const storageRef = ref(storage, `event_banners/${event.id}_${file.name}`);
+            try {
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+                setLocalData(prev => ({ ...prev, bannerImage: downloadURL }));
+            } catch (error) {
+                console.error("Error uploading image: ", error);
+            }
         }
     };
 
     return (
-        <div 
+        <div
           className="bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800 hover:border-gray-600 transition-all duration-300 animate-fadeInUp"
           style={{ animationDelay }}
         >
@@ -189,7 +192,7 @@ const EventEditorCard = ({
               <div className="mt-6">
                 <h4 className="text-lg font-semibold text-white mb-3">Matches</h4>
                 <div className="space-y-3">
-                  {event.matches.map(match => (
+                  {event.matches && event.matches.map(match => (
                     <div key={match.id} className="bg-black p-4 rounded-lg border border-gray-800">
                       <p className="text-white font-semibold mb-2">{match.title}</p>
                       <div className="flex flex-wrap gap-2 mb-2">
@@ -241,15 +244,13 @@ const FantasyWrestlingApp = () => {
   const [isPlayerManagementMinimized, setIsPlayerManagementMinimized] = useState(false);
   const [isHallOfFameMinimized, setIsHallOfFameMinimized] = useState(false);
 
-
   const [events, setEvents] = useState([]);
   const [players, setPlayers] = useState([]);
   const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
 
   const [editingEvent, setEditingEvent] = useState(null);
-  const [editingHoF, setEditingHoF] = useState(null);
 
-  // Fetch data from Firestore on component mount
+  // --- FIREBASE DATA FETCHING ---
   useEffect(() => {
     const unsubscribeEvents = onSnapshot(collection(db, "events"), (snapshot) => {
         const eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -274,17 +275,16 @@ const FantasyWrestlingApp = () => {
     };
   }, []);
 
-
   useEffect(() => {
-    const newParticles = Array.from({ length: 100 }, (_, i) => ({ // Increased to 100 particles
+    const newParticles = Array.from({ length: 100 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: Math.random() * 6 + 3, // Slightly larger base size
-      duration: Math.random() * 13 + 9, // Increased speed by ~10%
+      size: Math.random() * 6 + 3,
+      duration: Math.random() * 13 + 9,
       delay: Math.random() * 7,
-      initialDirectionX: (Math.random() - 0.5) * 2, // -1 to 1
-      initialDirectionY: (Math.random() - 0.5) * 2, // -1 to 1
+      initialDirectionX: (Math.random() - 0.5) * 2,
+      initialDirectionY: (Math.random() - 0.5) * 2,
     }));
     setParticles(newParticles);
   }, []);
@@ -298,10 +298,10 @@ const FantasyWrestlingApp = () => {
   const calculateTotalPoints = (player, allEvents) => {
     let totalScore = 0;
     allEvents.forEach(event => {
-        if (event.status === 'completed' || event.status === 'live') {
+        if ((event.status === 'completed' || event.status === 'live') && event.matches) {
             event.matches.forEach(match => {
                 const pickKey = `${event.id}-${match.id}`;
-                if (match.winner && player.picks[pickKey] === match.winner) {
+                if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
                     totalScore += 1;
                 }
             });
@@ -358,8 +358,7 @@ const FantasyWrestlingApp = () => {
   };
 
   const deleteEvent = async (eventId) => {
-    const eventRef = doc(db, "events", eventId);
-    await deleteDoc(eventRef);
+    await deleteDoc(doc(db, "events", eventId));
     if (editingEvent === eventId) {
       setEditingEvent(null);
     }
@@ -371,13 +370,13 @@ const FantasyWrestlingApp = () => {
       if (!event) return;
 
       const newMatchData = {
-        id: (event.matches.length > 0 ? Math.max(...event.matches.map(m => m.id)) : 0) + 1,
+        id: Date.now().toString(), // Use a more unique ID like timestamp string
         title: newMatch.title,
         options: newMatch.options.filter(o => o),
         winner: null
       };
       
-      const updatedMatches = [...event.matches, newMatchData];
+      const updatedMatches = [...(event.matches || []), newMatchData];
       await updateEvent(eventId, { matches: updatedMatches });
     }
   };
@@ -398,29 +397,1006 @@ const FantasyWrestlingApp = () => {
   const deletePlayer = async (playerId) => {
     const playerToDelete = players.find(p => p.id === playerId);
     if(playerToDelete && playerToDelete.name === currentUser){
-        setCurrentUser(players.length > 1 ? players.find(p => p.id !== playerId).name : null);
+        const otherPlayers = players.filter(p => p.id !== playerId);
+        setCurrentUser(otherPlayers.length > 0 ? otherPlayers[0].name : null);
     }
-    const playerRef = doc(db, "players", playerId);
-    await deleteDoc(playerRef);
+    await deleteDoc(doc(db, "players", playerId));
+  };
+  
+  const addPlayer = async (playerName) => {
+    if (playerName.trim()) {
+        const newPlayer = {
+          name: playerName.trim(),
+          picks: {}
+        };
+        await setDoc(doc(collection(db, "players")), newPlayer);
+      }
   };
 
   const addHallOfFameEntry = async (newEntry) => {
-    const newEntryRef = doc(collection(db, "hallOfFame"));
-    await setDoc(newEntryRef, newEntry);
+      const { image, ...rest } = newEntry;
+      if (image instanceof File) {
+          const storageRef = ref(storage, `hall_of_fame/${Date.now()}_${image.name}`);
+          await uploadBytes(storageRef, image);
+          const downloadURL = await getDownloadURL(storageRef);
+          await setDoc(doc(collection(db, "hallOfFame")), { ...rest, imageUrl: downloadURL });
+      } else {
+        await setDoc(doc(collection(db, "hallOfFame")), rest);
+      }
   };
 
   const updateHallOfFameEntry = async (id, updates) => {
-    const hofRef = doc(db, "hallOfFame", id);
-    await setDoc(hofRef, updates, { merge: true });
+    const { image, ...rest } = updates;
+    if (image instanceof File) {
+        const storageRef = ref(storage, `hall_of_fame/${id}_${image.name}`);
+        await uploadBytes(storageRef, image);
+        const downloadURL = await getDownloadURL(storageRef);
+        await setDoc(doc(db, "hallOfFame", id), { ...rest, imageUrl: downloadURL }, { merge: true });
+    } else {
+        await setDoc(doc(db, "hallOfFame", id), rest, { merge: true });
+    }
   };
 
   const deleteHallOfFameEntry = async (id) => {
-    const hofRef = doc(db, "hallOfFame", id);
-    await deleteDoc(hofRef);
+    await deleteDoc(doc(db, "hallOfFame", id));
   };
-    // ...The rest of your component code remains the same...
-    // (FloatingParticles, Navigation, HomeView, MakePicksView, etc.)
-    // ...
+
+  const FloatingParticles = React.memo(() => (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="absolute rounded-full bg-gray-800"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            animation: `drift-${p.id} ${p.duration}s ease-in-out infinite`,
+            animationDelay: `${p.delay}s`,
+            opacity: '0.9',
+          }}
+        />
+      ))}
+      <style>{`
+        ${particles.map(p => `
+            @keyframes drift-${p.id} {
+                0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.8; }
+                25% { transform: translate3d(${p.initialDirectionX * 50}px, ${p.initialDirectionY * 50}px, 0) scale(1.5); opacity: 0.4; }
+                50% { transform: translate3d(${-p.initialDirectionX * 40}px, ${-p.initialDirectionY * 40}px, 0) scale(1.8); opacity: 1; }
+                75% { transform: translate3d(${p.initialDirectionX * 30}px, ${p.initialDirectionY * 30}px, 0) scale(1.2); opacity: 0.6; }
+                100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.8; }
+            }
+        `).join('')}
+      `}</style>
+    </div>
+  ));
+
+  const Navigation = () => (
+    <nav className="bg-black text-white shadow-xl border-b border-gray-800 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => setCurrentView('home')}
+              className="text-xl font-bold tracking-wider hover:text-gray-400 transition-all duration-300"
+            >
+              BWL <span className="text-gray-400">FANTASY</span>
+            </button>
+            <div className="hidden md:flex items-center space-x-2 ml-4">
+              <button 
+                onClick={() => setCurrentView('home')}
+                className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${
+                  currentView === 'home' 
+                    ? 'bg-white text-black' 
+                    : 'hover:bg-gray-900'
+                }`}
+              >
+                Events
+              </button>
+              <button 
+                onClick={() => setCurrentView('standings')}
+                className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${
+                  currentView === 'standings' 
+                    ? 'bg-white text-black' 
+                    : 'hover:bg-gray-900'
+                }`}
+              >
+                Standings
+              </button>
+              <button 
+                onClick={() => setCurrentView('halloffame')}
+                className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${
+                  currentView === 'halloffame' 
+                    ? 'bg-white text-black' 
+                    : 'hover:bg-gray-900'
+                }`}
+              >
+                Hall of Fame
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => isAdmin ? setCurrentView('admin') : setCurrentView('login')}
+              className="flex items-center space-x-2 bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-lg transition-all duration-300 text-sm"
+            >
+              {isAdmin ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+              <span>Admin</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+
+  const HomeView = () => (
+    <div className="min-h-screen bg-black p-8 relative">
+      <FloatingParticles />
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="text-center mb-12">
+          <h1 className="text-6xl font-bold text-white mb-4">
+            BWL <span className="text-gray-400">2025/2026</span>
+          </h1>
+          <p className="text-xl text-gray-400">Bellend Wrestling League Fantasy Picks</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {events.map((event) => (
+            <div 
+              key={event.id}
+              className="bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-800 hover:border-white transition-all duration-500 transform hover:scale-105 hover:shadow-white/20 flex flex-col"
+            >
+              <div className="relative h-48 bg-gradient-to-br from-gray-800 to-black overflow-hidden group">
+                {event.bannerImage ? (
+                  <img 
+                    src={event.bannerImage} 
+                    alt={event.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+                    <h3 className="text-3xl font-bold text-white text-center p-2">{event.name}</h3>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
+                <div className="absolute top-4 right-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    event.status === 'completed' ? 'border-green-500 text-green-500 bg-green-500/10' :
+                    event.status === 'live' ? 'border-red-500 text-red-500 bg-red-500/10 animate-pulse' :
+                    event.status === 'open' ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' :
+                    'border-gray-500 text-gray-500 bg-gray-500/10'
+                  }`}>
+                    {event.status.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col flex-grow">
+                <p className="text-gray-400 mb-4 text-sm">{event.date}</p>
+                <div className="space-y-3 mt-auto">
+                  <button
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setCurrentView('event-standings');
+                    }}
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 border border-gray-700 hover:border-gray-500"
+                  >
+                    View Standings
+                  </button>
+                   {(event.status === 'live' || event.status === 'completed') && (
+                    <button
+                      onClick={() => {
+                        setSelectedEvent(event);
+                        setCurrentView('event-predictions');
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 border border-blue-500 flex items-center justify-center space-x-2"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>View Predictions</span>
+                    </button>
+                  )}
+                  {event.status === 'open' && (
+                    <button
+                      onClick={() => {
+                        setSelectedEvent(event);
+                        setCurrentView('make-picks');
+                      }}
+                      className="w-full bg-white hover:bg-gray-200 text-black font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                    >
+                      Make Picks
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+    const Modal = ({ isOpen, onClose, message, type = 'success' }) => {
+        if (!isOpen) return null;
+
+        const styles = {
+            success: {
+                borderColor: 'border-green-500',
+                icon: <Lock className="w-20 h-20 mx-auto mb-6 text-green-400 animate-pulse" />,
+                buttonColor: 'bg-green-500 hover:bg-green-600'
+            },
+            error: {
+                borderColor: 'border-red-500',
+                icon: <X className="w-20 h-20 mx-auto mb-6 text-red-400" />,
+                buttonColor: 'bg-red-500 hover:bg-red-600'
+            }
+        };
+
+        const currentStyle = styles[type];
+
+        return (
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 transition-opacity duration-300 animate-fadeIn"
+                onClick={onClose}
+            >
+                <div 
+                    className={`bg-gray-900 rounded-2xl p-8 shadow-2xl border-2 ${currentStyle.borderColor} text-center transform transition-all duration-300 animate-fadeInUp max-w-sm w-full mx-4`}
+                    onClick={e => e.stopPropagation()}
+                >
+                    {currentStyle.icon}
+                    <p className="text-xl font-bold text-white mb-8">{message}</p>
+                    <button
+                        onClick={onClose}
+                        className={`w-full ${currentStyle.buttonColor} text-black font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105`}
+                    >
+                        OK
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+  const MakePicksView = () => {
+    const player = players.find(p => p.name === currentUser) || { picks: {} };
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    
+    const handleLockInPicks = () => {
+        const playerPicksForEvent = Object.keys(player.picks || {}).filter(key => key.startsWith(`${selectedEvent.id}-`));
+
+        if (selectedEvent.matches && selectedEvent.matches.length > 0 && playerPicksForEvent.length < selectedEvent.matches.length) {
+            setShowErrorModal(true);
+        } else {
+            handlePicksSubmitted(selectedEvent.id, currentUser);
+            setShowSubmitModal(true);
+        }
+    };
+
+    return (
+      <div className="min-h-screen bg-black p-8 relative">
+        <FloatingParticles />
+        <div className="max-w-4xl mx-auto relative z-10">
+          <button 
+            onClick={() => setCurrentView('home')}
+            className="mb-6 text-gray-400 hover:text-white flex items-center space-x-2 transition-all duration-300"
+          >
+            <span>← Back to Events</span>
+          </button>
+          
+          <div className="bg-gray-900 rounded-xl p-8 shadow-2xl border border-gray-800">
+            { selectedEvent.status === 'open' &&
+                <div className="mb-8 p-4 bg-black rounded-lg border-2 border-dashed border-yellow-500">
+                    <label className="block text-yellow-400 text-sm font-bold mb-2 text-center" htmlFor="player-select">
+                        SELECT YOUR NAME TO MAKE PICKS
+                    </label>
+                    <select 
+                        id="player-select"
+                        value={currentUser || ''} 
+                        onChange={(e) => setCurrentUser(e.target.value)}
+                        className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:border-yellow-500 text-lg text-center appearance-none"
+                    >
+                        {players.map(p => {
+                           const hasSubmitted = selectedEvent.submittedPlayers?.includes(p.name);
+                           return (
+                               <option 
+                                   key={p.id} 
+                                   value={p.name} 
+                                   disabled={hasSubmitted}
+                                   className={hasSubmitted ? 'text-gray-500' : ''}
+                                >
+                                   {p.name} {hasSubmitted ? '(Picks Submitted)' : ''}
+                               </option>
+                           );
+                        })}
+                    </select>
+                </div>
+            }
+
+            <h2 className="text-4xl font-bold text-white mb-2">{selectedEvent.name}</h2>
+            <p className="text-gray-400 mb-8">{selectedEvent.date}</p>
+            
+            {!selectedEvent.matches || selectedEvent.matches.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">Matches not yet announced</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {selectedEvent.matches.map((match) => {
+                    const pickKey = `${selectedEvent.id}-${match.id}`;
+                    const playerPick = (player && player.picks) ? player.picks[pickKey] : undefined;
+                    const hasWinner = !!match.winner;
+                  
+                    return (
+                        <div 
+                            key={match.id} 
+                            className="bg-black rounded-lg p-6 border border-gray-800 hover:border-gray-600 transition-all duration-300"
+                        >
+                            <h3 className="text-xl font-semibold text-white mb-4">{match.title}</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                            {match.options.map((option, idx) => {
+                                const isPicked = playerPick === option;
+                                const isWinner = match.winner === option;
+
+                                let buttonClass = 'bg-gray-900 text-gray-300 hover:bg-gray-800 border-gray-700 hover:border-gray-500';
+                                if (hasWinner) {
+                                    if (isWinner) {
+                                        buttonClass = 'bg-green-500 text-black border-green-400 shadow-lg shadow-green-500/50';
+                                    } else if (isPicked && !isWinner) {
+                                        buttonClass = 'bg-red-500 text-white border-red-400 shadow-lg shadow-red-500/50';
+                                    }
+                                } else if (isPicked) {
+                                    buttonClass = 'bg-white text-black border-white shadow-lg';
+                                }
+                                
+                                return (
+                                <button
+                                    key={idx}
+                                    onClick={() => selectedEvent.status === 'open' && submitPick(selectedEvent.id, match.id, option)}
+                                    disabled={selectedEvent.status !== 'open'}
+                                    className={`p-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 border ${buttonClass} ${selectedEvent.status !== 'open' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                    {option}
+                                    {isWinner && ' ✓'}
+                                </button>
+                                );
+                            })}
+                            </div>
+                        </div>
+                    );
+                })}
+              </div>
+            )}
+            {selectedEvent.status === 'open' && (
+                <button
+                    onClick={handleLockInPicks}
+                    className="w-full mt-8 bg-green-500 hover:bg-green-600 text-black font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 text-lg"
+                >
+                    Lock In Picks
+                </button>
+            )}
+          </div>
+        </div>
+        <Modal 
+            isOpen={showErrorModal} 
+            onClose={() => setShowErrorModal(false)} 
+            message="The Rock says this: There is no way. And The Rock means NO. WAY. That you forgot to make a pick for a match. Go back and check your picks, jabroni."
+            type="error"
+        />
+        <Modal 
+            isOpen={showSubmitModal} 
+            onClose={() => setShowSubmitModal(false)} 
+            message="Say your prayers and eat your vitamins. Your picks have been submitted, brother." 
+            type="success"
+        />
+      </div>
+    );
+  };
+
+  const PlayerManagement = ({ isMinimized, onToggleMinimize }) => {
+    const [localPlayerName, setLocalPlayerName] = useState('');
+    
+    const handleAddPlayer = () => {
+      addPlayer(localPlayerName);
+      setLocalPlayerName('');
+    };
+    
+    return (
+      <div className="mt-8 bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800">
+        <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={onToggleMinimize}>
+            <h3 className="text-2xl font-bold text-white">Player Management</h3>
+            <button
+              className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300"
+            >
+              {isMinimized ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+            </button>
+        </div>
+        
+        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMinimized ? 'max-h-0' : 'max-h-screen'}`}>
+            <div className="mb-6 bg-black p-4 rounded-lg border border-gray-800">
+              <h4 className="text-white font-semibold mb-3">Add New Player</h4>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Player name"
+                  value={localPlayerName}
+                  onChange={(e) => setLocalPlayerName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
+                  className="flex-1 px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
+                />
+                <button
+                  onClick={handleAddPlayer}
+                  className="px-6 py-2 bg-white hover:bg-gray-200 text-black font-semibold rounded-lg transition-all duration-300 transform hover:scale-105"
+                >
+                  Add Player
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {players.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">No players yet. Add your first player above!</p>
+              ) : (
+                players.map((player) => (
+                  <div 
+                    key={player.id} 
+                    className="flex items-center justify-between bg-black p-4 rounded-lg border border-gray-800 hover:border-gray-600 transition-all duration-300"
+                  >
+                    <span className="text-white font-semibold">{player.name}</span>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-white font-bold">{calculateTotalPoints(player, events)} pts</span>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => deletePlayer(player.id)}
+                          className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-gray-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+        </div>
+      </div>
+    );
+  };
+
+  const HallOfFameManagement = ({ 
+    entries, 
+    onAddEntry, 
+    onUpdateEntry, 
+    onDeleteEntry,
+    isMinimized,
+    onToggleMinimize,
+  }) => {
+    const [newEntry, setNewEntry] = useState({ title: '', image: null, description: '' });
+    const [editingEntryId, setEditingEntryId] = useState(null);
+    const [localEditingData, setLocalEditingData] = useState(null);
+
+    useEffect(() => {
+        if (editingEntryId) {
+            const entry = entries.find(e => e.id === editingEntryId);
+            setLocalEditingData(entry ? { ...entry } : null);
+        } else {
+            setLocalEditingData(null);
+        }
+    }, [editingEntryId, entries]);
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (editingEntryId) {
+                setLocalEditingData(prev => ({ ...prev, image: file, imageUrl: URL.createObjectURL(file) }));
+            } else {
+                setNewEntry(prev => ({ ...prev, image: file, imageUrl: URL.createObjectURL(file) }));
+            }
+        }
+    };
+
+    const handleAddOrUpdate = () => {
+        if (editingEntryId) {
+            onUpdateEntry(editingEntryId, localEditingData);
+            setEditingEntryId(null);
+        } else {
+            if (newEntry.title && newEntry.image) {
+                onAddEntry(newEntry);
+                setNewEntry({ title: '', image: null, description: '', imageUrl: '' });
+            } else {
+                alert('Please provide a title and image for the Hall of Fame entry.');
+            }
+        }
+    };
+
+    return (
+      <div className="mt-8 bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800">
+        <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={onToggleMinimize}>
+          <h3 className="text-2xl font-bold text-white">Hall of Fame Management</h3>
+          <button className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300">
+            {isMinimized ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+          </button>
+        </div>
+
+        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMinimized ? 'max-h-0' : 'max-h-screen'}`}>
+          <div className="mb-6 bg-black p-4 rounded-lg border border-gray-800">
+            <h4 className="text-white font-semibold mb-3">{editingEntryId ? 'Edit Hall of Famer' : 'Add New Hall of Famer'}</h4>
+            <input
+              type="text"
+              placeholder="Title (e.g., 2025 Mr. Predictamania | Johnny)"
+              value={editingEntryId ? (localEditingData?.title || '') : newEntry.title}
+              onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, title: e.target.value })) : setNewEntry(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:border-white focus:outline-none mb-3 transition-all duration-300"
+            />
+            <textarea
+                placeholder="Description (optional, e.g., 145 Points)"
+                value={editingEntryId ? (localEditingData?.description || '') : newEntry.description}
+                onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, description: e.target.value })) : setNewEntry(prev => ({ ...prev, description: e.target.value }))}
+                rows="3"
+                className="w-full px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:border-white focus:outline-none mb-3 resize-y transition-all duration-300"
+            ></textarea>
+            <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 hover:border-white transition-all duration-300 mb-4">
+              <label className="cursor-pointer block text-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <div className="text-gray-400 hover:text-white transition-colors">
+                  {(editingEntryId ? localEditingData?.imageUrl : newEntry.imageUrl) ? (
+                    <div>
+                      <img src={editingEntryId ? localEditingData.imageUrl : newEntry.imageUrl} alt="Preview" className="w-full h-32 object-cover rounded mb-2" />
+                      <p className="text-sm">Click to change image</p>
+                    </div>
+                  ) : (
+                    <p>Click to upload image</p>
+                  )}
+                </div>
+              </label>
+            </div>
+            <div className="flex space-x-2">
+                <button
+                    onClick={handleAddOrUpdate}
+                    className="flex-1 px-6 py-2 bg-white hover:bg-gray-200 text-black font-semibold rounded-lg transition-all duration-300 transform hover:scale-105"
+                >
+                    {editingEntryId ? 'Save Changes' : 'Add Hall of Famer'}
+                </button>
+                {editingEntryId && (
+                    <button
+                        onClick={() => setEditingEntryId(null)}
+                        className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-300"
+                    >
+                        Cancel
+                    </button>
+                )}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {entries.length === 0 ? (
+              <p className="text-gray-400 text-center py-8">No Hall of Fame entries yet. Add one above!</p>
+            ) : (
+              entries.map((entry) => (
+                <div 
+                  key={entry.id} 
+                  className="flex items-center justify-between bg-black p-4 rounded-lg border border-gray-800 hover:border-gray-600 transition-all duration-300"
+                >
+                  <div className="flex items-center space-x-3">
+                    {entry.imageUrl && <img src={entry.imageUrl} alt={entry.title} className="w-12 h-12 object-cover rounded-full border border-gray-700" />}
+                    <div>
+                        <p className="text-white font-semibold">{entry.title}</p>
+                        {entry.description && <p className="text-gray-400 text-sm">{entry.description}</p>}
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingEntryId(entry.id)}
+                      className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-gray-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onDeleteEntry(entry.id)}
+                      className="px-3 py-1 bg-red-700 hover:bg-red-800 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const EventStandingsView = () => {
+    if (!selectedEvent) return null;
+
+    const calculateScores = () => {
+      return players.map(player => {
+        let score = 0;
+        if(selectedEvent.matches){
+            selectedEvent.matches.forEach(match => {
+                const pickKey = `${selectedEvent.id}-${match.id}`;
+                if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
+                  score += 1;
+                }
+              });
+        }
+        return { ...player, eventScore: score };
+      }).sort((a, b) => b.eventScore - a.eventScore);
+    };
+
+    const playerScores = calculateScores();
+
+    return (
+      <div className="min-h-screen bg-black p-8 relative">
+        <FloatingParticles />
+        <div className="max-w-4xl mx-auto relative z-10">
+          <button
+            onClick={() => setCurrentView('home')}
+            className="mb-6 text-gray-400 hover:text-white flex items-center space-x-2 transition-all duration-300"
+          >
+            <span>← Back to Events</span>
+          </button>
+          <h2 className="text-5xl font-bold text-white mb-12 text-center animate-slideDown">
+            {selectedEvent.name} Standings
+          </h2>
+          <div className="space-y-3 animate-fadeIn">
+            {playerScores.map((player, idx) => (
+              <div
+                key={player.id}
+                className={`flex items-center justify-between p-6 rounded-xl transition-all duration-500 transform hover:scale-102 animate-fadeInUp border-2 ${
+                  idx === 0 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 shadow-2xl shadow-yellow-500/50' :
+                  idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500 border-gray-300 shadow-xl shadow-gray-400/30' :
+                  idx === 2 ? 'bg-gradient-to-r from-orange-600 to-orange-700 border-orange-500 shadow-xl shadow-orange-600/30' :
+                  'bg-gray-900 border-gray-700 hover:border-gray-500'
+                }`}
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <div className="flex items-center space-x-6">
+                  <span className={`text-5xl font-black ${idx < 3 ? 'text-white' : 'text-gray-400'}`}>
+                    {idx + 1}
+                  </span>
+                  <span className="text-3xl font-bold text-white">
+                    {player.name}
+                  </span>
+                </div>
+                <span className="text-4xl font-black text-white">
+                  {player.eventScore}
+                </span>
+              </div>
+            ))}
+             {playerScores.length === 0 && (
+                <p className="text-gray-400 text-center py-8">No players have made picks for this event yet, or results are not in.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  const EventPredictionsView = ({ selectedEvent, players, onBack }) => {
+    if (!selectedEvent || !selectedEvent.matches) return null;
+
+    const predictions = selectedEvent.matches.map(match => {
+        const picksByOption = match.options.reduce((acc, option) => {
+            acc[option] = [];
+            return acc;
+        }, {});
+
+        players.forEach(player => {
+            const pickKey = `${selectedEvent.id}-${match.id}`;
+            const playerPick = player.picks ? player.picks[pickKey] : undefined;
+            if (playerPick && picksByOption.hasOwnProperty(playerPick)) {
+                picksByOption[playerPick].push(player.name);
+            }
+        });
+
+        return {
+            matchTitle: match.title,
+            picks: picksByOption,
+            winner: match.winner
+        };
+    });
+
+    return (
+        <div className="min-h-screen bg-black p-8 relative">
+            <FloatingParticles />
+            <div className="max-w-4xl mx-auto relative z-10">
+                <button
+                    onClick={onBack}
+                    className="mb-6 text-gray-400 hover:text-white flex items-center space-x-2 transition-all duration-300"
+                >
+                    <span>← Back to Events</span>
+                </button>
+                <h2 className="text-5xl font-bold text-white mb-4 text-center">
+                    {selectedEvent.name}
+                </h2>
+                <p className="text-gray-400 mb-12 text-center">Player Predictions</p>
+
+                <div className="space-y-8">
+                    {predictions.map((prediction, idx) => (
+                        <div key={idx} className="bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800">
+                            <h3 className="text-2xl font-bold text-white mb-4">{prediction.matchTitle}</h3>
+                            <div className="space-y-3">
+                                {Object.entries(prediction.picks).map(([option, playerNames]) => (
+                                    <div key={option} className={`p-4 rounded-lg border transition-all duration-300 ${prediction.winner === option ? 'bg-green-900/50 border-green-500' : 'bg-black border-gray-800'}`}>
+                                        <p className={`font-semibold ${prediction.winner === option ? 'text-green-400' : 'text-white'}`}>{option}</p>
+                                        {playerNames.length > 0 ? (
+                                            <p className="text-gray-400 mt-1 text-sm">
+                                                Picked by: {playerNames.join(', ')}
+                                            </p>
+                                        ) : (
+                                            <p className="text-gray-600 mt-1 text-sm">
+                                                No players picked this option.
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                    {predictions.length === 0 && (
+                         <p className="text-gray-400 text-center py-8">No matches available for this event yet.</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+  const StandingsView = () => {
+    const sortedPlayers = [...players]
+      .map(p => ({
+        ...p,
+        totalPoints: calculateTotalPoints(p, events)
+      }))
+      .sort((a, b) => b.totalPoints - a.totalPoints);
+    
+    return (
+      <div className="min-h-screen bg-black p-8 relative">
+        <FloatingParticles />
+        <div className="max-w-4xl mx-auto relative z-10">
+          <h2 className="text-5xl font-bold text-white mb-12 text-center animate-slideDown">
+            Global Standings
+          </h2>
+          
+          <div className="space-y-3 animate-fadeIn">
+            {sortedPlayers.map((player, idx) => (
+              <div 
+                key={player.id} 
+                className={`flex items-center justify-between p-6 rounded-xl transition-all duration-500 transform hover:scale-102 animate-fadeInUp border-2 ${
+                  idx === 0 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 shadow-2xl shadow-yellow-500/50' :
+                  idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500 border-gray-300 shadow-xl shadow-gray-400/30' :
+                  idx === 2 ? 'bg-gradient-to-r from-orange-600 to-orange-700 border-orange-500 shadow-xl shadow-orange-600/30' :
+                  'bg-gray-900 border-gray-700 hover:border-gray-500'
+                }`}
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <div className="flex items-center space-x-6">
+                  <span className={`text-5xl font-black ${
+                    idx === 0 ? 'text-white' :
+                    idx === 1 ? 'text-white' :
+                    idx === 2 ? 'text-white' :
+                    'text-gray-400'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span className={`text-3xl font-bold ${
+                    idx < 3 ? 'text-white' : 'text-white'
+                  }`}>
+                    {player.name}
+                  </span>
+                </div>
+                <span className={`text-4xl font-black ${
+                  idx < 3 ? 'text-white' : 'text-white'
+                }`}>
+                  {player.totalPoints}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const AdminLoginView = () => {
+    const [localPassword, setLocalPassword] = useState('');
+    
+    const handleLogin = () => {
+      if (localPassword === 'ssj') {
+        setIsAdmin(true);
+        setCurrentView('admin');
+        setAdminPassword('');
+        setLocalPassword('');
+      } else {
+        alert('Incorrect password');
+      }
+    };
+    
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-8 relative">
+        <FloatingParticles />
+        <div className="bg-gray-900 rounded-xl p-8 shadow-2xl max-w-md w-full border border-gray-800 relative z-10 animate-fadeIn">
+          <h2 className="text-3xl font-bold text-white mb-6 text-center">Admin Login</h2>
+          <input
+            type="password"
+            placeholder="Enter admin password"
+            value={localPassword}
+            onChange={(e) => setLocalPassword(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+            className="w-full px-4 py-3 rounded-lg bg-black text-white border border-gray-700 focus:border-white focus:outline-none mb-4 transition-all duration-300"
+          />
+          <button
+            onClick={handleLogin}
+            className="w-full bg-white hover:bg-gray-200 text-black font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+          >
+            Login
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const AdminView = () => (
+    <div className="min-h-screen bg-black p-8 relative">
+      <FloatingParticles />
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="flex justify-between items-center mb-8 animate-slideDown">
+          <h2 className="text-4xl font-bold text-white">Admin Panel</h2>
+          <button
+            onClick={createNewEvent}
+            className="bg-white hover:bg-gray-200 text-black font-semibold px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+          >
+            <Plus className="w-5 h-5" />
+            <span>New Event</span>
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {events.map((event, index) => (
+             <EventEditorCard
+                key={event.id}
+                event={event}
+                isEditing={editingEvent === event.id}
+                onSetEditing={setEditingEvent}
+                onSave={(id, data) => {
+                  updateEvent(id, data);
+                  setEditingEvent(null);
+                }}
+                onDelete={deleteEvent}
+                onUpdateEvent={updateEvent}
+                onAddMatch={addMatch}
+                animationDelay={`${index * 100}ms`}
+                isMinimized={minimizedEvents.includes(event.id)}
+                onToggleMinimize={toggleMinimizeEvent}
+            />
+          ))}
+        </div>
+
+        <PlayerManagement 
+            isMinimized={isPlayerManagementMinimized}
+            onToggleMinimize={() => setIsPlayerManagementMinimized(p => !p)}
+        />
+        <HallOfFameManagement
+            entries={hallOfFameEntries}
+            onAddEntry={addHallOfFameEntry}
+            onUpdateEntry={updateHallOfFameEntry}
+            onDeleteEntry={deleteHallOfFameEntry}
+            isMinimized={isHallOfFameMinimized}
+            onToggleMinimize={() => setIsHallOfFameMinimized(p => !p)}
+        />
+      </div>
+    </div>
+  );
+
+  const HallOfFameView = () => {
+    const latestWinner = hallOfFameEntries.length > 0 ? hallOfFameEntries[hallOfFameEntries.length - 1] : null;
+    const previousWinners = hallOfFameEntries.length > 1 ? hallOfFameEntries.slice(0, hallOfFameEntries.length - 1).reverse() : [];
+
+    return (
+    <div className="min-h-screen bg-black p-8 relative">
+      <FloatingParticles />
+      <div className="max-w-7xl mx-auto relative z-10">
+        <h2 className="text-5xl font-bold text-white mb-8 flex items-center justify-center space-x-4 animate-slideDown">
+          <Award className="w-12 h-12 text-yellow-400" />
+          <span>Hall of Fame</span>
+          <Award className="w-12 h-12 text-yellow-400" />
+        </h2>
+        
+        {hallOfFameEntries.length === 0 ? (
+            <p className="text-gray-400 text-center py-16 text-xl">The Hall of Fame is empty. A new legend awaits their coronation!</p>
+        ) : (
+            <>
+                {latestWinner && (
+                     <div className="mb-12 bg-gradient-to-br from-gray-900 to-black rounded-2xl p-8 shadow-2xl border-2 border-yellow-500/50 relative overflow-hidden group animate-fadeInUp">
+                         <div className="absolute -top-1/2 -left-1/2 w-full h-[200%] bg-gradient-to-r from-yellow-500/0 via-yellow-500/20 to-yellow-500/0 animate-spotlight"></div>
+                         <div className="text-center mb-6">
+                            <h3 className="text-4xl font-bold text-white tracking-wider">LATEST INDUCTEE</h3>
+                         </div>
+                         <div className="flex flex-col md:flex-row items-center gap-8">
+                             <div className="md:w-1/2 relative">
+                                 <img src={latestWinner.imageUrl} alt={latestWinner.title} className="rounded-xl shadow-2xl w-full h-auto object-cover border-4 border-yellow-400"/>
+                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
+                             </div>
+                             <div className="md:w-1/2 text-center md:text-left">
+                                 <h4 className="text-5xl font-black text-white mb-3">{latestWinner.title}</h4>
+                                 <p className="text-2xl text-yellow-400 font-semibold">{latestWinner.description}</p>
+                             </div>
+                         </div>
+                     </div>
+                )}
+                
+                {previousWinners.length > 0 && (
+                    <>
+                        <h3 className="text-3xl font-bold text-white text-center my-12 border-t border-b border-gray-700 py-4">Previous Champions</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {previousWinners.map((entry, index) => (
+                              <div 
+                                key={entry.id}
+                                className="bg-gray-900 rounded-xl overflow-hidden shadow-xl border border-gray-800 hover:border-yellow-400 transition-all duration-500 transform hover:scale-105 hover:shadow-yellow-400/20 flex flex-col group"
+                                style={{ animationDelay: `${index * 150}ms` }}
+                              >
+                                <div className="relative h-72 bg-black overflow-hidden">
+                                  {entry.imageUrl ? (
+                                    <img 
+                                      src={entry.imageUrl} 
+                                      alt={entry.title}
+                                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    />
+                                  ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <Trophy className="w-20 h-20 text-gray-600" />
+                                    </div>
+                                  )}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0"></div>
+                                   <div className="absolute bottom-4 left-4">
+                                        <Trophy className="w-10 h-10 text-yellow-500 animate-pulse"/>
+                                   </div>
+                                </div>
+                                <div className="p-6 text-center bg-gray-900">
+                                  <h4 className="text-2xl font-bold text-white mb-1">{entry.title}</h4>
+                                  {entry.description && <p className="text-yellow-500">{entry.description}</p>}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+            </>
+        )}
+      </div>
+       <style>{`
+            @keyframes spotlight {
+                0% { transform: translateX(-100%) skewX(-15deg); }
+                100% { transform: translateX(200%) skewX(-15deg); }
+            }
+            .animate-spotlight {
+                animation: spotlight 3s linear infinite;
+            }
+        `}</style>
+    </div>
+  );
+  };
+
+  return (
+    <div className="min-h-screen bg-black">
+      <Navigation />
+      {currentView === 'home' && <HomeView />}
+      {currentView === 'make-picks' && <MakePicksView />}
+      {currentView === 'event-standings' && <EventStandingsView />}
+      {currentView === 'event-predictions' && <EventPredictionsView selectedEvent={selectedEvent} players={players} onBack={() => setCurrentView('home')} />}
+      {currentView === 'standings' && <StandingsView />}
+      {currentView === 'halloffame' && <HallOfFameView />}
+      {currentView === 'login' && <AdminLoginView />}
+      {currentView === 'admin' && isAdmin && <AdminView />}
+    </div>
+  );
 };
 
 export default FantasyWrestlingApp;

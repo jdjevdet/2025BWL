@@ -78,13 +78,10 @@ const EventEditorCard = ({
         onSave(event.id, localData);
     };
 
-    // --- THIS IS THE UPDATED FUNCTION ---
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Show an instant preview
             const localImageUrl = URL.createObjectURL(file);
-            // Store the actual file object to be uploaded on save
             setLocalData(prev => ({ ...prev, bannerImage: localImageUrl, imageFile: file }));
         }
     };
@@ -333,7 +330,6 @@ const FantasyWrestlingApp = () => {
     }
   };
 
-  // --- THIS FUNCTION IS UPDATED ---
   const createNewEvent = async () => {
     const newEventData = {
       name: 'NEW EVENT',
@@ -343,29 +339,49 @@ const FantasyWrestlingApp = () => {
       matches: [],
       submittedPlayers: []
     };
-    const docRef = await addDoc(collection(db, "events"), newEventData);
-    setEditingEvent(docRef.id);
+    try {
+        const docRef = await addDoc(collection(db, "events"), newEventData);
+        setEditingEvent(docRef.id);
+    } catch (error) {
+        console.error("Error creating new event:", error);
+        alert("Could not create new event. Check Firestore security rules and console for details.");
+    }
   };
   
-  // --- THIS FUNCTION IS UPDATED ---
-  const updateEvent = async (eventId, updates) => {
-      const { imageFile, ...eventData } = updates;
-      const eventRef = doc(db, "events", eventId);
-  
-      if (imageFile) {
-          const storageRef = ref(storage, `event_banners/${eventId}_${imageFile.name}`);
-          await uploadBytes(storageRef, imageFile);
-          const downloadURL = await getDownloadURL(storageRef);
-          eventData.bannerImage = downloadURL; // Replace local URL with Firebase URL
-      }
-  
-      await setDoc(eventRef, eventData, { merge: true });
+  const updateEvent = async (eventId, dataFromState) => {
+    try {
+        const eventDataToSave = { ...dataFromState };
+        const eventRef = doc(db, "events", eventId);
+
+        if (dataFromState.imageFile) {
+            const imageFile = dataFromState.imageFile;
+            const storageRef = ref(storage, `event_banners/${eventId}_${imageFile.name}`);
+            const uploadResult = await uploadBytes(storageRef, imageFile);
+            const downloadURL = await getDownloadURL(uploadResult.ref);
+            eventDataToSave.bannerImage = downloadURL;
+        }
+
+        delete eventDataToSave.imageFile;
+        delete eventDataToSave.id;
+
+        await setDoc(eventRef, eventDataToSave, { merge: true });
+
+    } catch (error) {
+        console.error("ERROR UPDATING EVENT:", error);
+        alert(`Failed to save event. Check Firestore security rules. Error: ${error.message}`);
+    }
   };
 
+
   const deleteEvent = async (eventId) => {
-    await deleteDoc(doc(db, "events", eventId));
-    if (editingEvent === eventId) {
-      setEditingEvent(null);
+    try {
+        await deleteDoc(doc(db, "events", eventId));
+        if (editingEvent === eventId) {
+            setEditingEvent(null);
+        }
+    } catch (error) {
+        console.error("Error deleting event: ", error);
+        alert("Failed to delete event.");
     }
   };
 
@@ -382,7 +398,12 @@ const FantasyWrestlingApp = () => {
       };
       
       const updatedMatches = [...(event.matches || []), newMatchData];
-      await updateEvent(eventId, { matches: updatedMatches });
+      try {
+        await setDoc(doc(db, "events", eventId), { matches: updatedMatches }, { merge: true });
+      } catch (error) {
+        console.error("Error adding match: ", error);
+        alert("Failed to add match.");
+      }
     }
   };
   
@@ -393,19 +414,29 @@ const FantasyWrestlingApp = () => {
     }
     const player = players.find(p => p.name === currentUser);
     if (player) {
-      const playerRef = doc(db, "players", player.id);
-      const updatedPicks = { ...player.picks, [`${eventId}-${matchId}`]: pick };
-      await setDoc(playerRef, { picks: updatedPicks }, { merge: true });
+        try {
+            const playerRef = doc(db, "players", player.id);
+            const updatedPicks = { ...player.picks, [`${eventId}-${matchId}`]: pick };
+            await setDoc(playerRef, { picks: updatedPicks }, { merge: true });
+        } catch (error) {
+            console.error("Error submitting pick: ", error);
+            alert("Failed to submit pick.");
+        }
     }
   };
 
   const deletePlayer = async (playerId) => {
-    const playerToDelete = players.find(p => p.id === playerId);
-    if(playerToDelete && playerToDelete.name === currentUser){
-        const otherPlayers = players.filter(p => p.id !== playerId);
-        setCurrentUser(otherPlayers.length > 0 ? otherPlayers[0].name : null);
+    try {
+        const playerToDelete = players.find(p => p.id === playerId);
+        if(playerToDelete && playerToDelete.name === currentUser){
+            const otherPlayers = players.filter(p => p.id !== playerId);
+            setCurrentUser(otherPlayers.length > 0 ? otherPlayers[0].name : null);
+        }
+        await deleteDoc(doc(db, "players", playerId));
+    } catch (error) {
+        console.error("Error deleting player: ", error);
+        alert("Failed to delete player.");
     }
-    await deleteDoc(doc(db, "players", playerId));
   };
   
   const addPlayer = async (playerName) => {
@@ -414,36 +445,58 @@ const FantasyWrestlingApp = () => {
           name: playerName.trim(),
           picks: {}
         };
-        await addDoc(collection(db, "players"), newPlayer);
+        try {
+            await addDoc(collection(db, "players"), newPlayer);
+        } catch (error) {
+            console.error("Error adding player: ", error);
+            alert("Failed to add player.");
+        }
       }
   };
 
   const addHallOfFameEntry = async (newEntry) => {
-      const { imageFile, ...rest } = newEntry;
-      let imageUrl = newEntry.imageUrl || null;
+    try {
+        const { imageFile, ...rest } = newEntry;
+        let imageUrl = newEntry.imageUrl || null;
 
-      if (imageFile) {
-          const storageRef = ref(storage, `hall_of_fame/${Date.now()}_${imageFile.name}`);
-          await uploadBytes(storageRef, imageFile);
-          imageUrl = await getDownloadURL(storageRef);
-      }
-      await addDoc(collection(db, "hallOfFame"), { ...rest, imageUrl });
+        if (imageFile) {
+            const storageRef = ref(storage, `hall_of_fame/${Date.now()}_${imageFile.name}`);
+            await uploadBytes(storageRef, imageFile);
+            imageUrl = await getDownloadURL(storageRef);
+        }
+        delete rest.imageUrl;
+        await addDoc(collection(db, "hallOfFame"), { ...rest, imageUrl });
+    } catch(error) {
+        console.error("Error adding Hall of Fame entry: ", error);
+        alert("Failed to add Hall of Fame entry.");
+    }
   };
 
   const updateHallOfFameEntry = async (id, updates) => {
-    const { imageFile, ...rest } = updates;
-    let imageUrl = updates.imageUrl || null;
+    try {
+        const { imageFile, ...rest } = updates;
+        let imageUrl = updates.imageUrl || null;
 
-    if (imageFile) {
-        const storageRef = ref(storage, `hall_of_fame/${id}_${imageFile.name}`);
-        await uploadBytes(storageRef, imageFile);
-        imageUrl = await getDownloadURL(storageRef);
+        if (imageFile) {
+            const storageRef = ref(storage, `hall_of_fame/${id}_${imageFile.name}`);
+            await uploadBytes(storageRef, imageFile);
+            imageUrl = await getDownloadURL(storageRef);
+        }
+        delete rest.imageUrl;
+        await setDoc(doc(db, "hallOfFame", id), { ...rest, imageUrl }, { merge: true });
+    } catch (error) {
+        console.error("Error updating Hall of Fame entry: ", error);
+        alert("Failed to update Hall of Fame entry.");
     }
-    await setDoc(doc(db, "hallOfFame", id), { ...rest, imageUrl }, { merge: true });
   };
 
   const deleteHallOfFameEntry = async (id) => {
-    await deleteDoc(doc(db, "hallOfFame", id));
+    try {
+        await deleteDoc(doc(db, "hallOfFame", id));
+    } catch (error) {
+        console.error("Error deleting Hall of Fame entry: ", error);
+        alert("Failed to delete Hall of Fame entry.");
+    }
   };
 
   const FloatingParticles = React.memo(() => (
@@ -1271,8 +1324,8 @@ const FantasyWrestlingApp = () => {
                 event={event}
                 isEditing={editingEvent === event.id}
                 onSetEditing={setEditingEvent}
-                onSave={(id, data) => {
-                  updateEvent(id, data);
+                onSave={async (id, data) => {
+                  await updateEvent(id, data);
                   setEditingEvent(null);
                 }}
                 onDelete={deleteEvent}

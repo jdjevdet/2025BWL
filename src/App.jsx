@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users, ChevronUp, ChevronDown, X, Menu } from 'lucide-react';
 
 // Import Firebase and your configuration
 import { db, storage } from './firebase';
@@ -237,12 +237,24 @@ const FantasyWrestlingApp = () => {
   const [minimizedEvents, setMinimizedEvents] = useState([]);
   const [isPlayerManagementMinimized, setIsPlayerManagementMinimized] = useState(false);
   const [isHallOfFameMinimized, setIsHallOfFameMinimized] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [events, setEvents] = useState([]);
   const [players, setPlayers] = useState([]);
   const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
 
   const [editingEvent, setEditingEvent] = useState(null);
+
+  const historicalScores = {
+    'BACKLASH': { 'Erik': 5, 'Albert': 5, 'Johnny': 4, 'Jordan': 4, 'Matt': 4, 'Derick': 4, 'Marcus': 4, 'Jaydan': 3, 'George': 3, 'Rob': 2 },
+    'MONEY IN THE BANK': { 'Matt': 4, 'Johnny': 3, 'Jaydan': 3, 'Erik': 3, 'Albert': 3, 'Rob': 3, 'Marcus': 3, 'Jordan': 2, 'George': 2, 'Derick': 2 },
+    'NIGHT OF CHAMPIONS': { 'Jordan': 6, 'Johnny': 5, 'Jaydan': 5, 'Matt': 5, 'George': 5, 'Derick': 5, 'Rob': 5, 'Erik': 4, 'Albert': 4, 'Marcus': 3 },
+    'SUMMERSLAM': { 'Johnny': 9, 'Erik': 9, 'Jordan': 8, 'Rob': 8, 'Jaydan': 7, 'Matt': 7, 'Albert': 7, 'George': 6, 'Derick': 6, 'Marcus': 6 },
+    'CLASH IN PARIS': { 'Johnny': 6, 'Matt': 6, 'Erik': 6, 'George': 6, 'Albert': 6, 'Jordan': 5, 'Jaydan': 5, 'Derick': 5, 'Marcus': 5, 'Rob': 5 },
+    'WRESTLEPALOOZA': { 'Johnny': 4, 'Jordan': 4, 'Jaydan': 4, 'Erik': 4, 'Derick': 4, 'Albert': 4, 'Matt': 3, 'George': 3, 'Rob': 1, 'Marcus': 0 },
+    'CROWN JEWEL': { 'Derick': 5, 'Johnny': 4, 'Erik': 4, 'George': 4, 'Albert': 4, 'Matt': 3, 'Rob': 2, 'Jordan': 0, 'Jaydan': 0, 'Marcus': 0 }
+  };
+  const historicalEventNames = Object.keys(historicalScores);
 
   useEffect(() => {
     const unsubscribeEvents = onSnapshot(collection(db, "events"), (snapshot) => {
@@ -267,12 +279,9 @@ const FantasyWrestlingApp = () => {
     };
   }, []);
 
-  // --- SORTING LOGIC ---
   const sortedEvents = useMemo(() => {
-    // Sorts from oldest to newest
     return [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [events]);
-  // --- END SORTING LOGIC ---
 
   useEffect(() => {
     const newParticles = Array.from({ length: 100 }, (_, i) => ({
@@ -295,18 +304,30 @@ const FantasyWrestlingApp = () => {
   }, [players, currentUser]);
   
   const calculateTotalPoints = (player, allEvents) => {
-    let totalScore = 0;
+    let historicalTotal = 0;
+    if(player.name){
+        historicalEventNames.forEach(eventName => {
+            if (historicalScores[eventName] && historicalScores[eventName][player.name] !== undefined) {
+                historicalTotal += historicalScores[eventName][player.name];
+            }
+        });
+    }
+
+    let firebaseTotal = 0;
     allEvents.forEach(event => {
-        if ((event.status === 'completed' || event.status === 'live') && event.matches) {
-            event.matches.forEach(match => {
-                const pickKey = `${event.id}-${match.id}`;
-                if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
-                    totalScore += 1;
-                }
-            });
+        if (!historicalEventNames.includes(event.name.toUpperCase())) {
+            if ((event.status === 'completed' || event.status === 'live') && event.matches) {
+                event.matches.forEach(match => {
+                    const pickKey = `${event.id}-${match.id}`;
+                    if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
+                        firebaseTotal += 1;
+                    }
+                });
+            }
         }
     });
-    return totalScore;
+
+    return historicalTotal + firebaseTotal;
   }
 
   const toggleMinimizeEvent = (eventId) => {
@@ -539,61 +560,47 @@ const FantasyWrestlingApp = () => {
 
   const Navigation = () => (
     <nav className="bg-black text-white shadow-xl border-b border-gray-800 relative z-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => setCurrentView('home')}
-              className="text-xl font-bold tracking-wider hover:text-gray-400 transition-all duration-300"
-            >
-              BWL <span className="text-gray-400">FANTASY</span>
-            </button>
-            <div className="hidden md:flex items-center space-x-2 ml-4">
-              <button 
-                onClick={() => setCurrentView('home')}
-                className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${
-                  currentView === 'home' 
-                    ? 'bg-white text-black' 
-                    : 'hover:bg-gray-900'
-                }`}
-              >
-                Events
-              </button>
-              <button 
-                onClick={() => setCurrentView('standings')}
-                className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${
-                  currentView === 'standings' 
-                    ? 'bg-white text-black' 
-                    : 'hover:bg-gray-900'
-                }`}
-              >
-                Standings
-              </button>
-              <button 
-                onClick={() => setCurrentView('halloffame')}
-                className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${
-                  currentView === 'halloffame' 
-                    ? 'bg-white text-black' 
-                    : 'hover:bg-gray-900'
-                }`}
-              >
-                Hall of Fame
-              </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+                <div className="flex items-center space-x-4">
+                    <button onClick={() => setCurrentView('home')} className="text-xl font-bold tracking-wider hover:text-gray-400 transition-all duration-300">
+                        BWL <span className="text-gray-400">FANTASY</span>
+                    </button>
+                    {/* Desktop Menu */}
+                    <div className="hidden md:flex items-center space-x-2 ml-4">
+                        <button onClick={() => setCurrentView('home')} className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${currentView === 'home' ? 'bg-white text-black' : 'hover:bg-gray-900'}`}>Events</button>
+                        <button onClick={() => setCurrentView('standings')} className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${currentView === 'standings' ? 'bg-white text-black' : 'hover:bg-gray-900'}`}>Standings</button>
+                        <button onClick={() => setCurrentView('halloffame')} className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${currentView === 'halloffame' ? 'bg-white text-black' : 'hover:bg-gray-900'}`}>Hall of Fame</button>
+                    </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                    <button onClick={() => isAdmin ? setCurrentView('admin') : setCurrentView('login')} className="flex items-center space-x-2 bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-lg transition-all duration-300 text-sm">
+                        {isAdmin ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                        <span>Admin</span>
+                    </button>
+                    {/* Mobile Menu Button */}
+                    <div className="md:hidden">
+                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => isAdmin ? setCurrentView('admin') : setCurrentView('login')}
-              className="flex items-center space-x-2 bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-lg transition-all duration-300 text-sm"
-            >
-              {isAdmin ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-              <span>Admin</span>
-            </button>
-          </div>
         </div>
-      </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+            <div className="md:hidden">
+                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <button onClick={() => { setCurrentView('home'); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${currentView === 'home' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>Events</button>
+                    <button onClick={() => { setCurrentView('standings'); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${currentView === 'standings' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>Standings</button>
+                    <button onClick={() => { setCurrentView('halloffame'); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${currentView === 'halloffame' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>Hall of Fame</button>
+                </div>
+            </div>
+        )}
     </nav>
-  );
+);
 
   const HomeView = ({ events }) => (
     <div className="min-h-screen bg-black p-8 relative">
@@ -908,7 +915,7 @@ const FantasyWrestlingApp = () => {
                   >
                     <span className="text-white font-semibold">{player.name}</span>
                     <div className="flex items-center space-x-4">
-                      <span className="text-white font-bold">{calculateTotalPoints(player, events)} pts</span>
+                      <span className="text-white font-bold">{calculateTotalPoints(player, sortedEvents)} pts</span>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => deletePlayer(player.id)}
@@ -1080,22 +1087,33 @@ const FantasyWrestlingApp = () => {
   const EventStandingsView = () => {
     if (!selectedEvent) return null;
 
-    const calculateScores = () => {
-      return players.map(player => {
-        let score = 0;
-        if(selectedEvent.matches){
-            selectedEvent.matches.forEach(match => {
-                const pickKey = `${selectedEvent.id}-${match.id}`;
-                if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
-                  score += 1;
-                }
-              });
-        }
-        return { ...player, eventScore: score };
-      }).sort((a, b) => b.eventScore - a.eventScore);
-    };
+    const isHistorical = historicalEventNames.includes(selectedEvent.name.toUpperCase());
 
-    const playerScores = calculateScores();
+    const playerScores = useMemo(() => {
+        let scores;
+        if (isHistorical) {
+            const eventScores = historicalScores[selectedEvent.name.toUpperCase()];
+            scores = Object.keys(eventScores).map(playerName => ({
+                id: playerName,
+                name: playerName,
+                eventScore: eventScores[playerName]
+            }));
+        } else {
+            scores = players.map(player => {
+                let score = 0;
+                if(selectedEvent.matches){
+                    selectedEvent.matches.forEach(match => {
+                        const pickKey = `${selectedEvent.id}-${match.id}`;
+                        if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
+                          score += 1;
+                        }
+                    });
+                }
+                return { ...player, eventScore: score };
+            });
+        }
+        return scores.sort((a, b) => b.eventScore - a.eventScore);
+    }, [selectedEvent, players]);
 
     return (
       <div className="min-h-screen bg-black p-8 relative">
@@ -1216,11 +1234,21 @@ const FantasyWrestlingApp = () => {
 
 
   const StandingsView = () => {
-    const sortedPlayers = [...players]
-      .map(p => ({
-        ...p,
-        totalPoints: calculateTotalPoints(p, events)
-      }))
+    const allPlayerNames = useMemo(() => {
+        const firestorePlayers = players.map(p => p.name);
+        const historicalPlayers = Object.values(historicalScores).flatMap(scores => Object.keys(scores));
+        return [...new Set([...firestorePlayers, ...historicalPlayers])];
+    }, [players]);
+
+
+    const sortedPlayers = allPlayerNames
+      .map(name => {
+        const playerObject = players.find(p => p.name === name) || { name: name, id: name };
+        return {
+            ...playerObject,
+            totalPoints: calculateTotalPoints(playerObject, sortedEvents)
+        }
+      })
       .sort((a, b) => b.totalPoints - a.totalPoints);
     
     return (
@@ -1245,10 +1273,7 @@ const FantasyWrestlingApp = () => {
               >
                 <div className="flex items-center space-x-6">
                   <span className={`text-5xl font-black ${
-                    idx === 0 ? 'text-white' :
-                    idx === 1 ? 'text-white' :
-                    idx === 2 ? 'text-white' :
-                    'text-gray-400'
+                    idx < 3 ? 'text-white' : 'text-gray-400'
                   }`}>
                     {idx + 1}
                   </span>

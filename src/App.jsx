@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users, ChevronUp, ChevronDown, X } from 'lucide-react';
 
 // Import Firebase and your configuration
-import { db, storage } from './firebase'; // Make sure your firebase.js is set up correctly
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { db, storage } from './firebase';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const AddMatchForm = ({ eventId, onAddMatch }) => {
@@ -11,7 +11,7 @@ const AddMatchForm = ({ eventId, onAddMatch }) => {
 
     const handleAddMatch = () => {
       onAddMatch(eventId, newMatch);
-      setNewMatch({ title: '', options: ['', ''] }); // Reset form after submission
+      setNewMatch({ title: '', options: ['', ''] });
     };
 
     return (
@@ -78,17 +78,14 @@ const EventEditorCard = ({
         onSave(event.id, localData);
     };
 
-    const handleImageUpload = async (e) => {
+    // --- THIS IS THE UPDATED FUNCTION ---
+    const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            const storageRef = ref(storage, `event_banners/${event.id}_${file.name}`);
-            try {
-                await uploadBytes(storageRef, file);
-                const downloadURL = await getDownloadURL(storageRef);
-                setLocalData(prev => ({ ...prev, bannerImage: downloadURL }));
-            } catch (error) {
-                console.error("Error uploading image: ", error);
-            }
+            // Show an instant preview
+            const localImageUrl = URL.createObjectURL(file);
+            // Store the actual file object to be uploaded on save
+            setLocalData(prev => ({ ...prev, bannerImage: localImageUrl, imageFile: file }));
         }
     };
 
@@ -250,7 +247,6 @@ const FantasyWrestlingApp = () => {
 
   const [editingEvent, setEditingEvent] = useState(null);
 
-  // --- FIREBASE DATA FETCHING ---
   useEffect(() => {
     const unsubscribeEvents = onSnapshot(collection(db, "events"), (snapshot) => {
         const eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -267,7 +263,6 @@ const FantasyWrestlingApp = () => {
         setHallOfFameEntries(hofData);
     });
     
-    // Cleanup subscriptions on unmount
     return () => {
         unsubscribeEvents();
         unsubscribePlayers();
@@ -338,8 +333,9 @@ const FantasyWrestlingApp = () => {
     }
   };
 
+  // --- THIS FUNCTION IS UPDATED ---
   const createNewEvent = async () => {
-    const newEvent = {
+    const newEventData = {
       name: 'NEW EVENT',
       date: 'TBD',
       status: 'upcoming',
@@ -347,14 +343,23 @@ const FantasyWrestlingApp = () => {
       matches: [],
       submittedPlayers: []
     };
-    const newEventRef = doc(collection(db, "events"));
-    await setDoc(newEventRef, newEvent);
-    setEditingEvent(newEventRef.id);
+    const docRef = await addDoc(collection(db, "events"), newEventData);
+    setEditingEvent(docRef.id);
   };
-
+  
+  // --- THIS FUNCTION IS UPDATED ---
   const updateEvent = async (eventId, updates) => {
-    const eventRef = doc(db, "events", eventId);
-    await setDoc(eventRef, updates, { merge: true });
+      const { imageFile, ...eventData } = updates;
+      const eventRef = doc(db, "events", eventId);
+  
+      if (imageFile) {
+          const storageRef = ref(storage, `event_banners/${eventId}_${imageFile.name}`);
+          await uploadBytes(storageRef, imageFile);
+          const downloadURL = await getDownloadURL(storageRef);
+          eventData.bannerImage = downloadURL; // Replace local URL with Firebase URL
+      }
+  
+      await setDoc(eventRef, eventData, { merge: true });
   };
 
   const deleteEvent = async (eventId) => {
@@ -370,7 +375,7 @@ const FantasyWrestlingApp = () => {
       if (!event) return;
 
       const newMatchData = {
-        id: Date.now().toString(), // Use a more unique ID like timestamp string
+        id: Date.now().toString(),
         title: newMatch.title,
         options: newMatch.options.filter(o => o),
         winner: null
@@ -409,32 +414,32 @@ const FantasyWrestlingApp = () => {
           name: playerName.trim(),
           picks: {}
         };
-        await setDoc(doc(collection(db, "players")), newPlayer);
+        await addDoc(collection(db, "players"), newPlayer);
       }
   };
 
   const addHallOfFameEntry = async (newEntry) => {
-      const { image, ...rest } = newEntry;
-      if (image instanceof File) {
-          const storageRef = ref(storage, `hall_of_fame/${Date.now()}_${image.name}`);
-          await uploadBytes(storageRef, image);
-          const downloadURL = await getDownloadURL(storageRef);
-          await setDoc(doc(collection(db, "hallOfFame")), { ...rest, imageUrl: downloadURL });
-      } else {
-        await setDoc(doc(collection(db, "hallOfFame")), rest);
+      const { imageFile, ...rest } = newEntry;
+      let imageUrl = newEntry.imageUrl || null;
+
+      if (imageFile) {
+          const storageRef = ref(storage, `hall_of_fame/${Date.now()}_${imageFile.name}`);
+          await uploadBytes(storageRef, imageFile);
+          imageUrl = await getDownloadURL(storageRef);
       }
+      await addDoc(collection(db, "hallOfFame"), { ...rest, imageUrl });
   };
 
   const updateHallOfFameEntry = async (id, updates) => {
-    const { image, ...rest } = updates;
-    if (image instanceof File) {
-        const storageRef = ref(storage, `hall_of_fame/${id}_${image.name}`);
-        await uploadBytes(storageRef, image);
-        const downloadURL = await getDownloadURL(storageRef);
-        await setDoc(doc(db, "hallOfFame", id), { ...rest, imageUrl: downloadURL }, { merge: true });
-    } else {
-        await setDoc(doc(db, "hallOfFame", id), rest, { merge: true });
+    const { imageFile, ...rest } = updates;
+    let imageUrl = updates.imageUrl || null;
+
+    if (imageFile) {
+        const storageRef = ref(storage, `hall_of_fame/${id}_${imageFile.name}`);
+        await uploadBytes(storageRef, imageFile);
+        imageUrl = await getDownloadURL(storageRef);
     }
+    await setDoc(doc(db, "hallOfFame", id), { ...rest, imageUrl }, { merge: true });
   };
 
   const deleteHallOfFameEntry = async (id) => {
@@ -870,7 +875,7 @@ const FantasyWrestlingApp = () => {
     isMinimized,
     onToggleMinimize,
   }) => {
-    const [newEntry, setNewEntry] = useState({ title: '', image: null, description: '' });
+    const [newEntry, setNewEntry] = useState({ title: '', description: '', imageFile: null, imageUrl: '' });
     const [editingEntryId, setEditingEntryId] = useState(null);
     const [localEditingData, setLocalEditingData] = useState(null);
 
@@ -886,10 +891,11 @@ const FantasyWrestlingApp = () => {
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
+            const localUrl = URL.createObjectURL(file);
             if (editingEntryId) {
-                setLocalEditingData(prev => ({ ...prev, image: file, imageUrl: URL.createObjectURL(file) }));
+                setLocalEditingData(prev => ({ ...prev, imageFile: file, imageUrl: localUrl }));
             } else {
-                setNewEntry(prev => ({ ...prev, image: file, imageUrl: URL.createObjectURL(file) }));
+                setNewEntry(prev => ({ ...prev, imageFile: file, imageUrl: localUrl }));
             }
         }
     };
@@ -899,9 +905,9 @@ const FantasyWrestlingApp = () => {
             onUpdateEntry(editingEntryId, localEditingData);
             setEditingEntryId(null);
         } else {
-            if (newEntry.title && newEntry.image) {
+            if (newEntry.title && newEntry.imageFile) {
                 onAddEntry(newEntry);
-                setNewEntry({ title: '', image: null, description: '', imageUrl: '' });
+                setNewEntry({ title: '', description: '', imageFile: null, imageUrl: '' });
             } else {
                 alert('Please provide a title and image for the Hall of Fame entry.');
             }

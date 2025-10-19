@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users, ChevronUp, ChevronDown, X } from 'lucide-react';
 
 // Import Firebase and your configuration
@@ -266,6 +266,13 @@ const FantasyWrestlingApp = () => {
         unsubscribeHoF();
     };
   }, []);
+
+  // --- SORTING LOGIC ---
+  const sortedEvents = useMemo(() => {
+    // Sorts from oldest to newest
+    return [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [events]);
+  // --- END SORTING LOGIC ---
 
   useEffect(() => {
     const newParticles = Array.from({ length: 100 }, (_, i) => ({
@@ -588,7 +595,7 @@ const FantasyWrestlingApp = () => {
     </nav>
   );
 
-  const HomeView = () => (
+  const HomeView = ({ events }) => (
     <div className="min-h-screen bg-black p-8 relative">
       <FloatingParticles />
       <div className="max-w-7xl mx-auto relative z-10">
@@ -1302,7 +1309,7 @@ const FantasyWrestlingApp = () => {
     );
   };
 
-  const AdminView = () => (
+  const AdminView = ({ events }) => (
     <div className="min-h-screen bg-black p-8 relative">
       <FloatingParticles />
       <div className="max-w-6xl mx-auto relative z-10">
@@ -1446,14 +1453,14 @@ const FantasyWrestlingApp = () => {
   return (
     <div className="min-h-screen bg-black">
       <Navigation />
-      {currentView === 'home' && <HomeView />}
+      {currentView === 'home' && <HomeView events={sortedEvents} />}
       {currentView === 'make-picks' && <MakePicksView />}
       {currentView === 'event-standings' && <EventStandingsView />}
       {currentView === 'event-predictions' && <EventPredictionsView selectedEvent={selectedEvent} players={players} onBack={() => setCurrentView('home')} />}
       {currentView === 'standings' && <StandingsView />}
       {currentView === 'halloffame' && <HallOfFameView />}
       {currentView === 'login' && <AdminLoginView />}
-      {currentView === 'admin' && isAdmin && <AdminView />}
+      {currentView === 'admin' && isAdmin && <AdminView events={sortedEvents} />}
     </div>
   );
 };

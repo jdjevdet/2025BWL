@@ -288,6 +288,16 @@ const FantasyWrestlingApp = () => {
     return event?.name?.toLowerCase().includes('royal rumble');
   };
 
+  // Helper function to check if a specific match should use exclusive picks mode
+  const isExclusivePicksMatch = (event, matchTitle) => {
+    if (!isExclusivePicksEvent(event)) return false;
+    const exclusiveMatchTitles = [
+      "men's royal rumble match",
+      "women's royal rumble match"
+    ];
+    return exclusiveMatchTitles.includes(matchTitle?.toLowerCase());
+  };
+
   // Helper function to get picks taken by OTHER players for a specific match
   const getPicksTakenByOthers = (eventId, matchId, currentPlayerName) => {
     const pickKey = `${eventId}-${matchId}`;
@@ -460,9 +470,10 @@ const FantasyWrestlingApp = () => {
         return;
     }
     
-    // Check if this is an exclusive picks event and if the pick is already taken
+    // Check if this is an exclusive picks match and if the pick is already taken
     const event = events.find(e => e.id === eventId);
-    if (isExclusivePicksEvent(event)) {
+    const match = event?.matches?.find(m => m.id === matchId);
+    if (isExclusivePicksMatch(event, match?.title)) {
         const takenPicks = getPicksTakenByOthers(eventId, matchId, currentUser);
         if (takenPicks[pick]) {
             alert(`This pick has already been taken by ${takenPicks[pick]}. Please choose another option.`);
@@ -827,7 +838,7 @@ const FantasyWrestlingApp = () => {
                 {isExclusivePicksEvent(selectedEvent) && selectedEvent.status === 'open' && (
                   <div className="bg-purple-900/30 border border-purple-500 rounded-lg p-4 mb-4">
                     <p className="text-purple-300 text-sm text-center">
-                      <span className="font-bold">🎯 Exclusive Picks Mode:</span> Each wrestler can only be picked once across all players. Picks taken by others will be blocked.
+                      <span className="font-bold">🎯 Exclusive Picks Mode:</span> For the Men's and Women's Royal Rumble matches, each wrestler can only be picked once across all players.
                     </p>
                   </div>
                 )}
@@ -836,16 +847,23 @@ const FantasyWrestlingApp = () => {
                     const playerPick = (player && player.picks) ? player.picks[pickKey] : undefined;
                     const hasWinner = !!match.winner;
                     
-                    // Get picks taken by other players (only relevant for Royal Rumble)
-                    const isExclusive = isExclusivePicksEvent(selectedEvent);
+                    // Get picks taken by other players (only relevant for specific Royal Rumble matches)
+                    const isExclusive = isExclusivePicksMatch(selectedEvent, match.title);
                     const takenPicks = isExclusive ? getPicksTakenByOthers(selectedEvent.id, match.id, currentUser) : {};
                   
                     return (
                         <div 
                             key={match.id} 
-                            className="bg-black rounded-lg p-6 border border-gray-800 hover:border-gray-600 transition-all duration-300"
+                            className={`bg-black rounded-lg p-6 border transition-all duration-300 ${isExclusive ? 'border-purple-800 hover:border-purple-600' : 'border-gray-800 hover:border-gray-600'}`}
                         >
-                            <h3 className="text-xl font-semibold text-white mb-4">{match.title}</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-semibold text-white">{match.title}</h3>
+                                {isExclusive && (
+                                    <span className="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded border border-purple-700">
+                                        🎯 Exclusive
+                                    </span>
+                                )}
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                             {match.options.map((option, idx) => {
                                 const isPicked = playerPick === option;

@@ -367,6 +367,22 @@ const FantasyWrestlingApp = () => {
     return option?.toLowerCase() === 'other';
   };
 
+  // Helper function to get all players who picked OTHER for a specific match (excluding current user)
+  const getOtherPickers = (eventId, matchId, currentPlayerName) => {
+    const pickKey = `${eventId}-${matchId}`;
+    const otherPickers = [];
+    
+    players.forEach(player => {
+      if (player.name !== currentPlayerName && player.picks && player.picks[pickKey]) {
+        if (isExemptFromExclusive(player.picks[pickKey])) {
+          otherPickers.push(player.name);
+        }
+      }
+    });
+    
+    return otherPickers; // Returns array of player names who picked OTHER
+  };
+
   // Helper function to get picks taken by OTHER players for a specific match
   const getPicksTakenByOthers = (eventId, matchId, currentPlayerName) => {
     const pickKey = `${eventId}-${matchId}`;
@@ -1026,6 +1042,12 @@ const FantasyWrestlingApp = () => {
                                 const isWinner = match.winner === option;
                                 const takenByOther = takenPicks[option]; // Name of player who took this pick, or undefined
                                 const isBlocked = isExclusive && takenByOther && !isPicked;
+                                const isOtherOption = isExemptFromExclusive(option);
+                                
+                                // Get list of players who picked OTHER (for display purposes)
+                                const otherPickers = isExclusive && isOtherOption 
+                                    ? getOtherPickers(selectedEvent.id, match.id, currentUser) 
+                                    : [];
 
                                 let buttonClass = 'bg-gray-900 text-gray-300 hover:bg-gray-800 border-gray-700 hover:border-gray-500';
                                 if (hasWinner) {
@@ -1057,6 +1079,12 @@ const FantasyWrestlingApp = () => {
                                         {isBlocked && (
                                             <span className="text-xs mt-1 text-purple-400">
                                                 🔒 {takenByOther}
+                                            </span>
+                                        )}
+                                        {/* Show who picked OTHER (not locked, just informational) */}
+                                        {isOtherOption && otherPickers.length > 0 && (
+                                            <span className="text-xs mt-1 text-gray-400">
+                                                {otherPickers.join(', ')}
                                             </span>
                                         )}
                                     </div>

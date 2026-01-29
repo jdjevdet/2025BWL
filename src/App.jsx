@@ -64,6 +64,9 @@ const EventEditorCard = ({
     onDelete,
     onUpdateEvent,
     onAddMatch,
+    onResetPlayerPick,
+    onResetAllPlayerPicks,
+    players,
     animationDelay,
     isMinimized,
     onToggleMinimize,
@@ -221,6 +224,61 @@ const EventEditorCard = ({
                 </div>
                 { isEditing && <AddMatchForm eventId={event.id} onAddMatch={onAddMatch} /> }
               </div>
+
+              {/* Reset Player Picks Section - Only show for open events */}
+              {event.status === 'open' && players && players.length > 0 && (
+                <div className="mt-6 bg-red-900/20 p-4 rounded-lg border border-red-800">
+                  <h4 className="text-lg font-semibold text-red-400 mb-3">Reset Player Picks</h4>
+                  
+                  {/* Per-match pick reset */}
+                  {event.matches && event.matches.map(match => {
+                    // Find all players who have picked for this match
+                    const playersWithPicks = players.filter(p => 
+                      p.picks && p.picks[`${event.id}-${match.id}`]
+                    );
+                    
+                    if (playersWithPicks.length === 0) return null;
+                    
+                    return (
+                      <div key={match.id} className="mb-4 bg-black/50 p-3 rounded-lg">
+                        <p className="text-white text-sm font-semibold mb-2">{match.title}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {playersWithPicks.map(player => (
+                            <button
+                              key={player.id}
+                              onClick={() => onResetPlayerPick(event.id, match.id, player.name)}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-all duration-300 flex items-center space-x-1"
+                              title={`Reset ${player.name}'s pick: ${player.picks[`${event.id}-${match.id}`]}`}
+                            >
+                              <span>{player.name}: {player.picks[`${event.id}-${match.id}`]}</span>
+                              <X className="w-3 h-3" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Reset all picks for a player */}
+                  {event.submittedPlayers && event.submittedPlayers.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-red-800">
+                      <p className="text-gray-400 text-sm mb-2">Reset ALL picks & allow re-submission:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {event.submittedPlayers.map(playerName => (
+                          <button
+                            key={playerName}
+                            onClick={() => onResetAllPlayerPicks(event.id, playerName)}
+                            className="px-4 py-2 bg-red-800 hover:bg-red-900 text-white rounded-lg text-sm transition-all duration-300 flex items-center space-x-2"
+                          >
+                            <span>Reset All: {playerName}</span>
+                            <X className="w-4 h-4" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
         </div>
     );
@@ -326,11 +384,8 @@ const FantasyWrestlingApp = () => {
     setParticles(newParticles);
   }, []);
 
-  useEffect(() => {
-    if (players.length > 0 && !currentUser) {
-      setCurrentUser(players[0].name);
-    }
-  }, [players, currentUser]);
+  // Removed auto-selection of first player - users must explicitly select their name
+  // This ensures exclusive picks show correctly for all players
   
   const calculateTotalPoints = (player, allEvents) => {
     let historicalTotal = 0;
@@ -375,6 +430,85 @@ const FantasyWrestlingApp = () => {
         if (!submittedPlayers.includes(playerName)) {
             await setDoc(eventRef, { submittedPlayers: [...submittedPlayers, playerName] }, { merge: true });
         }
+    }
+  };
+
+  // Admin function to reset a player's pick for a specific match
+  const resetPlayerPick = async (eventId, matchId, playerName) => {
+    if (!isAdmin) {
+        alert("Only admins can reset picks.");
+        return;
+    }
+    
+    const player = players.find(p => p.name === playerName);
+    if (!player) {
+        alert("Player not found.");
+        return;
+    }
+
+    const event = events.find(e => e.id === eventId);
+    const match = event?.matches?.find(m => m.id === matchId);
+    const matchTitle = match?.title || 'this match';
+
+    const confirmReset = window.confirm(`Are you sure you want to reset ${playerName}'s pick for "${matchTitle}"?`);
+    if (!confirmReset) return;
+
+    try {
+        // Remove only the specific pick for this match
+        const pickKey = `${eventId}-${matchId}`;
+        const updatedPicks = { ...player.picks };
+        delete updatedPicks[pickKey];
+        
+        const playerRef = doc(db, "players", player.id);
+        await setDoc(playerRef, { picks: updatedPicks }, { merge: true });
+
+        alert(`${playerName}'s pick for "${matchTitle}" has been reset.`);
+    } catch (error) {
+        console.error("Error resetting player pick: ", error);
+        alert("Failed to reset pick.");
+    }
+  };
+
+  // Admin function to reset ALL of a player's picks for an event and allow re-submission
+  const resetAllPlayerPicks = async (eventId, playerName) => {
+    if (!isAdmin) {
+        alert("Only admins can reset picks.");
+        return;
+    }
+    
+    const player = players.find(p => p.name === playerName);
+    if (!player) {
+        alert("Player not found.");
+        return;
+    }
+
+    const confirmReset = window.confirm(`Are you sure you want to reset ALL picks for ${playerName} for this event? This will also allow them to re-submit their picks.`);
+    if (!confirmReset) return;
+
+    try {
+        // Remove all picks for this event from the player
+        const updatedPicks = { ...player.picks };
+        Object.keys(updatedPicks).forEach(key => {
+            if (key.startsWith(`${eventId}-`)) {
+                delete updatedPicks[key];
+            }
+        });
+        
+        const playerRef = doc(db, "players", player.id);
+        await setDoc(playerRef, { picks: updatedPicks }, { merge: true });
+
+        // Remove player from submittedPlayers list for this event
+        const event = events.find(e => e.id === eventId);
+        if (event && event.submittedPlayers?.includes(playerName)) {
+            const eventRef = doc(db, "events", eventId);
+            const updatedSubmitted = event.submittedPlayers.filter(name => name !== playerName);
+            await setDoc(eventRef, { submittedPlayers: updatedSubmitted }, { merge: true });
+        }
+
+        alert(`All picks for ${playerName} have been reset. They can now make new picks.`);
+    } catch (error) {
+        console.error("Error resetting player picks: ", error);
+        alert("Failed to reset picks.");
     }
   };
 
@@ -807,6 +941,7 @@ const FantasyWrestlingApp = () => {
                         onChange={(e) => setCurrentUser(e.target.value)}
                         className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:border-yellow-500 text-lg text-center appearance-none"
                     >
+                        <option value="" disabled>-- Select Your Name --</option>
                         {players.map(p => {
                            const hasSubmitted = selectedEvent.submittedPlayers?.includes(p.name);
                            return (
@@ -1438,6 +1573,9 @@ const FantasyWrestlingApp = () => {
                 onDelete={deleteEvent}
                 onUpdateEvent={updateEvent}
                 onAddMatch={addMatch}
+                onResetPlayerPick={resetPlayerPick}
+                onResetAllPlayerPicks={resetAllPlayerPicks}
+                players={players}
                 animationDelay={`${index * 100}ms`}
                 isMinimized={minimizedEvents.includes(event.id)}
                 onToggleMinimize={toggleMinimizeEvent}

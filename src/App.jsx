@@ -349,11 +349,17 @@ const FantasyWrestlingApp = () => {
   // Helper function to check if a specific match should use exclusive picks mode
   const isExclusivePicksMatch = (event, matchTitle) => {
     if (!isExclusivePicksEvent(event)) return false;
+    
+    // Normalize the match title: lowercase and replace all types of quotes/apostrophes with regular apostrophe
+    const normalizedTitle = matchTitle?.toLowerCase()
+      .replace(/['''`´]/g, "'")  // Replace all quote variants with regular apostrophe
+      .trim();
+    
     const exclusiveMatchTitles = [
       "men's royal rumble match",
       "women's royal rumble match"
     ];
-    return exclusiveMatchTitles.includes(matchTitle?.toLowerCase());
+    return exclusiveMatchTitles.includes(normalizedTitle);
   };
 
   // Helper function to check if an option is exempt from exclusive picks (e.g., "OTHER")

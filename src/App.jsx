@@ -356,6 +356,11 @@ const FantasyWrestlingApp = () => {
     return exclusiveMatchTitles.includes(matchTitle?.toLowerCase());
   };
 
+  // Helper function to check if an option is exempt from exclusive picks (e.g., "OTHER")
+  const isExemptFromExclusive = (option) => {
+    return option?.toLowerCase() === 'other';
+  };
+
   // Helper function to get picks taken by OTHER players for a specific match
   const getPicksTakenByOthers = (eventId, matchId, currentPlayerName) => {
     const pickKey = `${eventId}-${matchId}`;
@@ -363,7 +368,11 @@ const FantasyWrestlingApp = () => {
     
     players.forEach(player => {
       if (player.name !== currentPlayerName && player.picks && player.picks[pickKey]) {
-        takenPicks[player.picks[pickKey]] = player.name;
+        const pick = player.picks[pickKey];
+        // Don't mark exempt options (like "OTHER") as taken
+        if (!isExemptFromExclusive(pick)) {
+          takenPicks[pick] = player.name;
+        }
       }
     });
     
@@ -610,9 +619,10 @@ const FantasyWrestlingApp = () => {
     }
     
     // Check if this is an exclusive picks match and if the pick is already taken
+    // (exempt options like "OTHER" can be picked by multiple people)
     const event = events.find(e => e.id === eventId);
     const match = event?.matches?.find(m => m.id === matchId);
-    if (isExclusivePicksMatch(event, match?.title)) {
+    if (isExclusivePicksMatch(event, match?.title) && !isExemptFromExclusive(pick)) {
         const takenPicks = getPicksTakenByOthers(eventId, matchId, currentUser);
         if (takenPicks[pick]) {
             alert(`This pick has already been taken by ${takenPicks[pick]}. Please choose another option.`);

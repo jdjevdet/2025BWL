@@ -3,7 +3,7 @@ import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users
 
 // Import Firebase and your configuration
 import { db, storage } from './firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, addDoc } from "firebase/firestore";
+import { collection, doc, setDoc, deleteDoc, onSnapshot, addDoc, deleteField } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const AddMatchForm = ({ eventId, onAddMatch }) => {
@@ -454,13 +454,15 @@ const FantasyWrestlingApp = () => {
     if (!confirmReset) return;
 
     try {
-        // Remove only the specific pick for this match
+        // Remove only the specific pick for this match using deleteField()
         const pickKey = `${eventId}-${matchId}`;
-        const updatedPicks = { ...player.picks };
-        delete updatedPicks[pickKey];
         
         const playerRef = doc(db, "players", player.id);
-        await setDoc(playerRef, { picks: updatedPicks }, { merge: true });
+        await setDoc(playerRef, { 
+            picks: { 
+                [pickKey]: deleteField() 
+            } 
+        }, { merge: true });
 
         alert(`${playerName}'s pick for "${matchTitle}" has been reset.`);
     } catch (error) {
@@ -486,16 +488,19 @@ const FantasyWrestlingApp = () => {
     if (!confirmReset) return;
 
     try {
-        // Remove all picks for this event from the player
-        const updatedPicks = { ...player.picks };
-        Object.keys(updatedPicks).forEach(key => {
+        // Build an object with deleteField() for each pick to remove
+        const picksToDelete = {};
+        Object.keys(player.picks || {}).forEach(key => {
             if (key.startsWith(`${eventId}-`)) {
-                delete updatedPicks[key];
+                picksToDelete[key] = deleteField();
             }
         });
         
-        const playerRef = doc(db, "players", player.id);
-        await setDoc(playerRef, { picks: updatedPicks }, { merge: true });
+        // Only update if there are picks to delete
+        if (Object.keys(picksToDelete).length > 0) {
+            const playerRef = doc(db, "players", player.id);
+            await setDoc(playerRef, { picks: picksToDelete }, { merge: true });
+        }
 
         // Remove player from submittedPlayers list for this event
         const event = events.find(e => e.id === eventId);

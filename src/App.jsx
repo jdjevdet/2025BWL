@@ -283,6 +283,25 @@ const FantasyWrestlingApp = () => {
     return [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [events]);
 
+  // Helper function to check if an event is the Royal Rumble (exclusive picks mode)
+  const isExclusivePicksEvent = (event) => {
+    return event?.name?.toLowerCase().includes('royal rumble');
+  };
+
+  // Helper function to get picks taken by OTHER players for a specific match
+  const getPicksTakenByOthers = (eventId, matchId, currentPlayerName) => {
+    const pickKey = `${eventId}-${matchId}`;
+    const takenPicks = {};
+    
+    players.forEach(player => {
+      if (player.name !== currentPlayerName && player.picks && player.picks[pickKey]) {
+        takenPicks[player.picks[pickKey]] = player.name;
+      }
+    });
+    
+    return takenPicks; // Returns { "option": "playerName who picked it" }
+  };
+
   useEffect(() => {
     const newParticles = Array.from({ length: 100 }, (_, i) => ({
       id: i,
@@ -440,6 +459,17 @@ const FantasyWrestlingApp = () => {
         alert("Please select a player before making picks.");
         return;
     }
+    
+    // Check if this is an exclusive picks event and if the pick is already taken
+    const event = events.find(e => e.id === eventId);
+    if (isExclusivePicksEvent(event)) {
+        const takenPicks = getPicksTakenByOthers(eventId, matchId, currentUser);
+        if (takenPicks[pick]) {
+            alert(`This pick has already been taken by ${takenPicks[pick]}. Please choose another option.`);
+            return;
+        }
+    }
+    
     const player = players.find(p => p.name === currentUser);
     if (player) {
         try {
@@ -793,10 +823,22 @@ const FantasyWrestlingApp = () => {
               </div>
             ) : (
               <div className="space-y-6">
+                {/* Show exclusive picks notice for Royal Rumble */}
+                {isExclusivePicksEvent(selectedEvent) && selectedEvent.status === 'open' && (
+                  <div className="bg-purple-900/30 border border-purple-500 rounded-lg p-4 mb-4">
+                    <p className="text-purple-300 text-sm text-center">
+                      <span className="font-bold">🎯 Exclusive Picks Mode:</span> Each wrestler can only be picked once across all players. Picks taken by others will be blocked.
+                    </p>
+                  </div>
+                )}
                 {selectedEvent.matches.map((match) => {
                     const pickKey = `${selectedEvent.id}-${match.id}`;
                     const playerPick = (player && player.picks) ? player.picks[pickKey] : undefined;
                     const hasWinner = !!match.winner;
+                    
+                    // Get picks taken by other players (only relevant for Royal Rumble)
+                    const isExclusive = isExclusivePicksEvent(selectedEvent);
+                    const takenPicks = isExclusive ? getPicksTakenByOthers(selectedEvent.id, match.id, currentUser) : {};
                   
                     return (
                         <div 
@@ -808,6 +850,8 @@ const FantasyWrestlingApp = () => {
                             {match.options.map((option, idx) => {
                                 const isPicked = playerPick === option;
                                 const isWinner = match.winner === option;
+                                const takenByOther = takenPicks[option]; // Name of player who took this pick, or undefined
+                                const isBlocked = isExclusive && takenByOther && !isPicked;
 
                                 let buttonClass = 'bg-gray-900 text-gray-300 hover:bg-gray-800 border-gray-700 hover:border-gray-500';
                                 if (hasWinner) {
@@ -818,17 +862,30 @@ const FantasyWrestlingApp = () => {
                                     }
                                 } else if (isPicked) {
                                     buttonClass = 'bg-white text-black border-white shadow-lg';
+                                } else if (isBlocked) {
+                                    // Blocked by another player - show as unavailable
+                                    buttonClass = 'bg-gray-800 text-gray-500 border-gray-700 opacity-60 cursor-not-allowed';
                                 }
+                                
+                                const isDisabled = selectedEvent.status !== 'open' || isBlocked;
                                 
                                 return (
                                 <button
                                     key={idx}
-                                    onClick={() => selectedEvent.status === 'open' && submitPick(selectedEvent.id, match.id, option)}
-                                    disabled={selectedEvent.status !== 'open'}
-                                    className={`p-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 border ${buttonClass} ${selectedEvent.status !== 'open' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                    onClick={() => !isDisabled && submitPick(selectedEvent.id, match.id, option)}
+                                    disabled={isDisabled}
+                                    className={`p-4 rounded-lg font-semibold transition-all duration-300 border ${buttonClass} ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer transform hover:scale-105'}`}
+                                    title={isBlocked ? `Picked by ${takenByOther}` : ''}
                                 >
-                                    {option}
-                                    {isWinner && ' ✓'}
+                                    <div className="flex flex-col items-center">
+                                        <span>{option}</span>
+                                        {isWinner && <span className="text-sm mt-1">✓</span>}
+                                        {isBlocked && (
+                                            <span className="text-xs mt-1 text-purple-400">
+                                                🔒 {takenByOther}
+                                            </span>
+                                        )}
+                                    </div>
                                 </button>
                                 );
                             })}

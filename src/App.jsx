@@ -64,6 +64,7 @@ const EventEditorCard = ({
     onDelete,
     onUpdateEvent,
     onAddMatch,
+    onAddOptionToMatch,
     onResetPlayerPick,
     onResetAllPlayerPicks,
     players,
@@ -72,6 +73,8 @@ const EventEditorCard = ({
     onToggleMinimize,
 }) => {
     const [localData, setLocalData] = useState(event);
+    const [addingOptionToMatch, setAddingOptionToMatch] = useState(null); // match.id of match being edited
+    const [newOptionText, setNewOptionText] = useState('');
 
     useEffect(() => {
         setLocalData(event);
@@ -86,6 +89,14 @@ const EventEditorCard = ({
         if (file) {
             const localImageUrl = URL.createObjectURL(file);
             setLocalData(prev => ({ ...prev, bannerImage: localImageUrl, imageFile: file }));
+        }
+    };
+
+    const handleAddOption = (matchId) => {
+        if (newOptionText.trim()) {
+            onAddOptionToMatch(event.id, matchId, newOptionText.trim());
+            setNewOptionText('');
+            setAddingOptionToMatch(null);
         }
     };
 
@@ -198,7 +209,42 @@ const EventEditorCard = ({
                             {option}
                           </span>
                         ))}
+                        {/* Add Option button - only show when editing */}
+                        {isEditing && (
+                          <button
+                            onClick={() => setAddingOptionToMatch(addingOptionToMatch === match.id ? null : match.id)}
+                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm border border-green-500 transition-all duration-300"
+                          >
+                            + Add Option
+                          </button>
+                        )}
                       </div>
+                      {/* Add Option input field */}
+                      {isEditing && addingOptionToMatch === match.id && (
+                        <div className="flex gap-2 mb-2 mt-3">
+                          <input
+                            type="text"
+                            placeholder="New option name"
+                            value={newOptionText}
+                            onChange={(e) => setNewOptionText(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAddOption(match.id)}
+                            className="flex-1 px-3 py-2 rounded bg-gray-900 text-white text-sm border border-gray-700 focus:border-green-500 focus:outline-none transition-all duration-300"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleAddOption(match.id)}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-all duration-300"
+                          >
+                            Add
+                          </button>
+                          <button
+                            onClick={() => { setAddingOptionToMatch(null); setNewOptionText(''); }}
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-all duration-300"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                       {(event.status === 'completed' || event.status === 'live') && (
                         <select
                           value={match.winner || ''}
@@ -666,6 +712,34 @@ const FantasyWrestlingApp = () => {
       }
     }
   };
+
+  // Add a new option to an existing match
+  const addOptionToMatch = async (eventId, matchId, newOption) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const match = event.matches?.find(m => m.id === matchId);
+    if (!match) return;
+
+    // Check if option already exists
+    if (match.options.includes(newOption)) {
+      alert("This option already exists.");
+      return;
+    }
+
+    const updatedMatches = event.matches.map(m => 
+      m.id === matchId 
+        ? { ...m, options: [...m.options, newOption] }
+        : m
+    );
+
+    try {
+      await setDoc(doc(db, "events", eventId), { matches: updatedMatches }, { merge: true });
+    } catch (error) {
+      console.error("Error adding option to match: ", error);
+      alert("Failed to add option.");
+    }
+  };
   
   const submitPick = async (eventId, matchId, pick) => {
     if (!currentUser) {
@@ -957,7 +1031,31 @@ const FantasyWrestlingApp = () => {
     </div>
   );
 
-    const Modal = ({ isOpen, onClose, message, type = 'success' }) => {
+    const Modal = ({ isOpen, onClose, message, type = 'success', autoCloseSeconds = null }) => {
+        const [countdown, setCountdown] = useState(autoCloseSeconds);
+        
+        useEffect(() => {
+            if (!isOpen || !autoCloseSeconds) {
+                setCountdown(autoCloseSeconds);
+                return;
+            }
+            
+            setCountdown(autoCloseSeconds);
+            
+            const timer = setInterval(() => {
+                setCountdown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        onClose();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            
+            return () => clearInterval(timer);
+        }, [isOpen, autoCloseSeconds, onClose]);
+        
         if (!isOpen) return null;
 
         const styles = {
@@ -978,7 +1076,6 @@ const FantasyWrestlingApp = () => {
         return (
             <div 
                 className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 transition-opacity duration-300 animate-fadeIn"
-                onClick={onClose}
             >
                 <div 
                     className={`bg-gray-900 rounded-2xl p-8 shadow-2xl border-2 ${currentStyle.borderColor} text-center transform transition-all duration-300 animate-fadeInUp max-w-sm w-full mx-4`}
@@ -986,11 +1083,14 @@ const FantasyWrestlingApp = () => {
                 >
                     {currentStyle.icon}
                     <p className="text-xl font-bold text-white mb-8">{message}</p>
+                    {autoCloseSeconds && countdown > 0 && (
+                        <p className="text-gray-400 text-sm mb-4">Redirecting in {countdown} seconds...</p>
+                    )}
                     <button
                         onClick={onClose}
                         className={`w-full ${currentStyle.buttonColor} text-black font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105`}
                     >
-                        OK
+                        {autoCloseSeconds ? 'Go to Home Now' : 'OK'}
                     </button>
                 </div>
             </div>
@@ -1173,9 +1273,13 @@ const FantasyWrestlingApp = () => {
         />
         <Modal 
             isOpen={showSubmitModal} 
-            onClose={() => setShowSubmitModal(false)} 
+            onClose={() => {
+                setShowSubmitModal(false);
+                setCurrentView('home');
+            }} 
             message="Say your prayers and eat your vitamins. Your picks have been submitted, brother." 
             type="success"
+            autoCloseSeconds={5}
         />
       </div>
     );
@@ -1699,6 +1803,7 @@ const FantasyWrestlingApp = () => {
                 onDelete={deleteEvent}
                 onUpdateEvent={updateEvent}
                 onAddMatch={addMatch}
+                onAddOptionToMatch={addOptionToMatch}
                 onResetPlayerPick={resetPlayerPick}
                 onResetAllPlayerPicks={resetAllPlayerPicks}
                 players={players}

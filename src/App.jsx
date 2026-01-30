@@ -230,6 +230,36 @@ const EventEditorCard = ({
                 <div className="mt-6 bg-red-900/20 p-4 rounded-lg border border-red-800">
                   <h4 className="text-lg font-semibold text-red-400 mb-3">Reset Player Picks</h4>
                   
+                  {/* Warning: Players marked as submitted but with missing picks */}
+                  {event.submittedPlayers && event.submittedPlayers.length > 0 && (() => {
+                    const playersWithMissingPicks = event.submittedPlayers.filter(playerName => {
+                      const player = players.find(p => p.name === playerName);
+                      if (!player) return true; // Player not found
+                      const picksForEvent = Object.keys(player.picks || {}).filter(key => key.startsWith(`${event.id}-`));
+                      return picksForEvent.length === 0 || (event.matches && picksForEvent.length < event.matches.length);
+                    });
+                    
+                    if (playersWithMissingPicks.length === 0) return null;
+                    
+                    return (
+                      <div className="mb-4 bg-yellow-900/30 p-3 rounded-lg border border-yellow-600">
+                        <p className="text-yellow-400 text-sm font-semibold mb-2">⚠️ Submitted but missing picks:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {playersWithMissingPicks.map(playerName => {
+                            const player = players.find(p => p.name === playerName);
+                            const pickCount = player ? Object.keys(player.picks || {}).filter(key => key.startsWith(`${event.id}-`)).length : 0;
+                            return (
+                              <span key={playerName} className="px-3 py-1 bg-yellow-800 text-yellow-200 rounded text-xs">
+                                {playerName} ({pickCount}/{event.matches?.length || 0} picks)
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <p className="text-yellow-400/70 text-xs mt-2">Use "Reset All" below to let these players re-submit.</p>
+                      </div>
+                    );
+                  })()}
+                  
                   {/* Per-match pick reset */}
                   {event.matches && event.matches.map(match => {
                     // Find all players who have picked for this match
@@ -442,7 +472,10 @@ const FantasyWrestlingApp = () => {
         }
     });
 
-    return historicalTotal + firebaseTotal;
+    // Add manual bonus points (for OTHER picks that won, etc.)
+    const bonusPoints = player.bonusPoints || 0;
+
+    return historicalTotal + firebaseTotal + bonusPoints;
   }
 
   const toggleMinimizeEvent = (eventId) => {
@@ -692,6 +725,31 @@ const FantasyWrestlingApp = () => {
             alert("Failed to add player.");
         }
       }
+  };
+
+  // Admin function to adjust a player's bonus points
+  const adjustBonusPoints = async (playerId, adjustment) => {
+    if (!isAdmin) {
+        alert("Only admins can adjust points.");
+        return;
+    }
+    
+    const player = players.find(p => p.id === playerId);
+    if (!player) {
+        alert("Player not found.");
+        return;
+    }
+
+    try {
+        const currentBonus = player.bonusPoints || 0;
+        const newBonus = currentBonus + adjustment;
+        
+        const playerRef = doc(db, "players", playerId);
+        await setDoc(playerRef, { bonusPoints: newBonus }, { merge: true });
+    } catch (error) {
+        console.error("Error adjusting bonus points: ", error);
+        alert("Failed to adjust points.");
+    }
   };
 
   const addHallOfFameEntry = async (newEntry) => {
@@ -1174,15 +1232,34 @@ const FantasyWrestlingApp = () => {
                   >
                     <span className="text-white font-semibold">{player.name}</span>
                     <div className="flex items-center space-x-4">
-                      <span className="text-white font-bold">{calculateTotalPoints(player, sortedEvents)} pts</span>
-                      <div className="flex space-x-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-white font-bold">{calculateTotalPoints(player, sortedEvents)} pts</span>
+                        {player.bonusPoints !== undefined && player.bonusPoints !== 0 && (
+                          <span className="text-xs text-yellow-400">(+{player.bonusPoints} bonus)</span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-1">
                         <button
-                          onClick={() => deletePlayer(player.id)}
-                          className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-gray-700"
+                          onClick={() => adjustBonusPoints(player.id, -1)}
+                          className="w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-all duration-300"
+                          title="Remove 1 point"
                         >
-                          Remove
+                          -
+                        </button>
+                        <button
+                          onClick={() => adjustBonusPoints(player.id, 1)}
+                          className="w-8 h-8 bg-green-600 hover:bg-green-700 text-white rounded font-bold transition-all duration-300"
+                          title="Add 1 point"
+                        >
+                          +
                         </button>
                       </div>
+                      <button
+                        onClick={() => deletePlayer(player.id)}
+                        className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-gray-700"
+                      >
+                        Remove
+                      </button>
                     </div>
                   </div>
                 ))

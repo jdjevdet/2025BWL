@@ -489,20 +489,20 @@ const FantasyWrestlingApp = () => {
   }), [events]);
 
   // ── Auto-transition open events past deadline to live ──
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
   const autoTransitionedRef = useRef(new Set());
   useEffect(() => {
-    const check = () => {
-      events.forEach(event => {
+    const timer = setInterval(() => {
+      eventsRef.current.forEach(event => {
         if (event.status === 'open' && event.deadline && new Date(event.deadline) <= new Date() && !autoTransitionedRef.current.has(event.id)) {
           autoTransitionedRef.current.add(event.id);
           updateEvent(event.id, { status: 'live' });
         }
       });
-    };
-    check();
-    const timer = setInterval(check, 5000);
+    }, 10000);
     return () => clearInterval(timer);
-  }, [events]);
+  }, []);
 
   // ── Exclusive picks helpers (Royal Rumble) ──
   const isExclusivePicksEvent = (event) => event?.name?.toLowerCase().includes('royal rumble');

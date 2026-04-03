@@ -419,7 +419,16 @@ const FantasyWrestlingApp = () => {
     return () => { unsubscribeEvents(); unsubscribePlayers(); unsubscribeHoF(); };
   }, []);
 
-  const sortedEvents = useMemo(() => [...events].sort((a, b) => new Date(a.date) - new Date(b.date)), [events]);
+  const sortedEvents = useMemo(() => [...events].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    const validA = !isNaN(dateA);
+    const validB = !isNaN(dateB);
+    if (!validA && !validB) return 0;
+    if (!validA) return 1;
+    if (!validB) return -1;
+    return dateA - dateB;
+  }), [events]);
 
   // ── Exclusive picks helpers (Royal Rumble) ──
   const isExclusivePicksEvent = (event) => event?.name?.toLowerCase().includes('royal rumble');
@@ -1735,8 +1744,17 @@ const FantasyWrestlingApp = () => {
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   const PlayerManagement = ({ isMinimized, onToggleMinimize }) => {
     const [localPlayerName, setLocalPlayerName] = useState('');
+    const [settingPinFor, setSettingPinFor] = useState(null);
+    const [adminPinInput, setAdminPinInput] = useState('');
 
     const handleAddPlayer = () => { addPlayer(localPlayerName); setLocalPlayerName(''); };
+
+    const handleAdminSetPin = async (playerId) => {
+      if (!/^\d{4}$/.test(adminPinInput)) { alert('PIN must be exactly 4 digits.'); return; }
+      await setDoc(doc(db, "players", playerId), { pin: adminPinInput }, { merge: true });
+      setSettingPinFor(null);
+      setAdminPinInput('');
+    };
 
     return (
       <div className="mt-6 rounded-xl border border-[--border] card-gold-accent" style={{ background: 'var(--bg-surface)' }}>
@@ -1778,55 +1796,121 @@ const FantasyWrestlingApp = () => {
                 players.map((player) => (
                   <div
                     key={player.id}
-                    className="flex items-center justify-between p-3.5 rounded-lg border border-[--border] hover:border-[--border-light] transition-all gap-3"
+                    className="rounded-lg border border-[--border] hover:border-[--border-light] transition-all overflow-hidden"
                     style={{ background: 'var(--bg-elevated)' }}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <PlayerAvatar player={player} size="sm" />
-                      <span className="text-white font-medium text-sm truncate">{player.name}</span>
+                    {/* Top row: avatar, name, points, +/- */}
+                    <div className="flex items-center justify-between p-3.5 gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <PlayerAvatar player={player} size="sm" />
+                        <div className="min-w-0">
+                          <span className="text-white font-medium text-sm truncate block">{player.name}</span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[--text-muted] text-[10px]">{player.pin ? 'PIN set' : 'No PIN'}</span>
+                            <span className="text-[--text-muted] text-[10px]">|</span>
+                            <span className="text-[--text-muted] text-[10px]">{player.avatarUrl ? 'Has avatar' : 'No avatar'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-bold text-sm">{calculateTotalPoints(player, sortedEvents)} pts</span>
+                          {player.bonusPoints !== undefined && player.bonusPoints !== 0 && (
+                            <span className="text-[10px] text-[--gold] font-medium">+{player.bonusPoints}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            onClick={() => adjustBonusPoints(player.id, -1)}
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all"
+                          >-</button>
+                          <button
+                            onClick={() => adjustBonusPoints(player.id, 1)}
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                          >+</button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-white font-bold text-sm">{calculateTotalPoints(player, sortedEvents)} pts</span>
-                        {player.bonusPoints !== undefined && player.bonusPoints !== 0 && (
-                          <span className="text-[10px] text-[--gold] font-medium">+{player.bonusPoints}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          onClick={() => adjustBonusPoints(player.id, -1)}
-                          className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all"
-                        >-</button>
-                        <button
-                          onClick={() => adjustBonusPoints(player.id, 1)}
-                          className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 transition-all"
-                        >+</button>
-                      </div>
-                      {player.pin && (
-                        <button
-                          onClick={() => setDoc(doc(db, "players", player.id), { pin: deleteField() }, { merge: true })}
-                          className="px-2 py-1 rounded-md text-[10px] font-medium border border-amber-500/20 text-amber-400/70 hover:text-amber-400 hover:border-amber-500/40 transition-all flex items-center gap-1"
-                          title="Reset player's PIN"
-                        >
-                          <KeyRound className="w-2.5 h-2.5" />
-                          Reset PIN
-                        </button>
-                      )}
+
+                    {/* Bottom row: admin actions */}
+                    <div className="flex items-center gap-2 px-3.5 pb-3 flex-wrap">
+                      {/* Avatar: Upload / Remove */}
+                      <label className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-[--border-light] text-[--text-secondary] hover:text-[--gold] hover:border-[--gold-dark] transition-all flex items-center gap-1.5 cursor-pointer">
+                        <Camera className="w-3 h-3" />
+                        {player.avatarUrl ? 'Change Avatar' : 'Upload Avatar'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) uploadAvatar(player.id, file);
+                          }}
+                        />
+                      </label>
                       {player.avatarUrl && (
                         <button
                           onClick={() => removeAvatar(player.id)}
-                          className="px-2 py-1 rounded-md text-[10px] font-medium border border-[--border-light] text-[--text-muted] hover:text-red-400 hover:border-red-500/30 transition-all flex items-center gap-1"
-                          title="Remove player's avatar"
+                          className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-red-500/20 text-red-400/70 hover:text-red-400 hover:border-red-500/40 transition-all flex items-center gap-1.5"
                         >
-                          <Camera className="w-2.5 h-2.5" />
-                          Remove Pic
+                          <X className="w-3 h-3" />
+                          Remove Avatar
                         </button>
                       )}
+
+                      {/* PIN: Set / Reset */}
+                      {player.pin ? (
+                        <button
+                          onClick={() => setDoc(doc(db, "players", player.id), { pin: deleteField() }, { merge: true })}
+                          className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-amber-500/20 text-amber-400/70 hover:text-amber-400 hover:border-amber-500/40 transition-all flex items-center gap-1.5"
+                        >
+                          <KeyRound className="w-3 h-3" />
+                          Reset PIN
+                        </button>
+                      ) : (
+                        <>
+                          {settingPinFor === player.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={4}
+                                pattern="[0-9]*"
+                                placeholder="4-digit PIN"
+                                value={adminPinInput}
+                                onChange={(e) => setAdminPinInput(e.target.value.replace(/\D/g, ''))}
+                                onKeyPress={(e) => e.key === 'Enter' && handleAdminSetPin(player.id)}
+                                className="w-24 px-2 py-1.5 rounded-md text-[11px] text-white border border-[--border] transition-all text-center"
+                                style={{ background: 'var(--bg-input)' }}
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleAdminSetPin(player.id)}
+                                className="px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition-all"
+                              >Save</button>
+                              <button
+                                onClick={() => { setSettingPinFor(null); setAdminPinInput(''); }}
+                                className="px-2 py-1.5 rounded-md text-[11px] text-[--text-muted] hover:text-white border border-[--border] transition-all"
+                              >Cancel</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setSettingPinFor(player.id); setAdminPinInput(''); }}
+                              className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-[--border-light] text-[--text-secondary] hover:text-[--gold] hover:border-[--gold-dark] transition-all flex items-center gap-1.5"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                              Set PIN
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {/* Delete player */}
                       <button
                         onClick={() => deletePlayer(player.id)}
-                        className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-[--border-light] text-[--text-muted] hover:text-red-400 hover:border-red-500/30 transition-all"
+                        className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-red-500/20 text-red-400/70 hover:text-red-400 hover:border-red-500/40 transition-all ml-auto"
                       >
-                        Remove
+                        Delete Player
                       </button>
                     </div>
                   </div>

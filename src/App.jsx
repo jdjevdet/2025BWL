@@ -463,9 +463,11 @@ const FantasyWrestlingApp = () => {
   };
 
   // ── Auto-transition open events past deadline to live ──
+  const autoTransitionedRef = useRef(new Set());
   useEffect(() => {
     events.forEach(event => {
-      if (event.status === 'open' && event.deadline && new Date(event.deadline) <= new Date()) {
+      if (event.status === 'open' && event.deadline && new Date(event.deadline) <= new Date() && !autoTransitionedRef.current.has(event.id)) {
+        autoTransitionedRef.current.add(event.id);
         updateEvent(event.id, { status: 'live' });
       }
     });

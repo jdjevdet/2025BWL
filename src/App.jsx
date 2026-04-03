@@ -41,6 +41,53 @@ const PlayerAvatar = ({ player, size = 'sm' }) => {
 };
 
 /* ──────────────────────────────────────────────
+   COUNTDOWN BADGE (self-contained, only re-renders itself)
+   ────────────────────────────────────────────── */
+const getCountdownText = (deadline) => {
+  if (!deadline) return null;
+  const diff = new Date(deadline) - Date.now();
+  if (diff <= 0) return { text: 'Picks Locked', urgent: true, expired: true };
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  const secs = Math.floor((diff % 60000) / 1000);
+  const urgent = diff < 3600000;
+  if (days > 0) return { text: `${days}d ${hours}h ${mins}m`, urgent, expired: false };
+  if (hours > 0) return { text: `${hours}h ${mins}m`, urgent, expired: false };
+  return { text: `${mins}m ${secs}s`, urgent, expired: false };
+};
+
+const CountdownBadge = ({ deadline, variant = 'inline' }) => {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const cd = getCountdownText(deadline);
+  if (!cd) return null;
+
+  if (variant === 'bar') {
+    return (
+      <div className={`mb-4 px-4 py-3 rounded-xl border text-center text-sm font-semibold animate-fadeInUp ${
+        cd.urgent ? 'border-red-500/40 text-red-400' : 'border-[--gold-dark]/40 text-[--gold]'
+      } ${cd.urgent && !cd.expired ? 'glow-pulse' : ''}`}
+        style={{ background: cd.urgent ? 'rgba(239,35,60,0.06)' : 'rgba(201,168,76,0.06)' }}>
+        <Clock className="w-4 h-4 inline mr-2" />
+        {cd.expired ? 'Deadline passed \u2014 picks are locked' : `Picks lock in ${cd.text}`}
+      </div>
+    );
+  }
+
+  return (
+    <p className={`text-xs font-semibold flex items-center gap-1.5 ${cd.urgent ? 'text-red-400' : 'text-[--gold]'}`}>
+      <Clock className="w-3 h-3" />
+      {cd.expired ? 'Picks Locked' : `Picks lock in ${cd.text}`}
+    </p>
+  );
+};
+
+/* ──────────────────────────────────────────────
    ADMIN: Add Match Form
    ────────────────────────────────────────────── */
 const AddMatchForm = ({ eventId, onAddMatch }) => {
@@ -441,37 +488,21 @@ const FantasyWrestlingApp = () => {
     return dateA - dateB;
   }), [events]);
 
-  // ── Countdown tick (drives deadline countdowns) ──
-  const [countdownTick, setCountdownTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setCountdownTick(t => t + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const getCountdownText = (deadline) => {
-    if (!deadline) return null;
-    const diff = new Date(deadline) - Date.now();
-    if (diff <= 0) return { text: 'Picks Locked', urgent: true, expired: true };
-    const days = Math.floor(diff / 86400000);
-    const hours = Math.floor((diff % 86400000) / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
-    const secs = Math.floor((diff % 60000) / 1000);
-    const urgent = diff < 3600000;
-    if (days > 0) return { text: `${days}d ${hours}h ${mins}m`, urgent, expired: false };
-    if (hours > 0) return { text: `${hours}h ${mins}m`, urgent, expired: false };
-    return { text: `${mins}m ${secs}s`, urgent, expired: false };
-  };
-
   // ── Auto-transition open events past deadline to live ──
   const autoTransitionedRef = useRef(new Set());
   useEffect(() => {
-    events.forEach(event => {
-      if (event.status === 'open' && event.deadline && new Date(event.deadline) <= new Date() && !autoTransitionedRef.current.has(event.id)) {
-        autoTransitionedRef.current.add(event.id);
-        updateEvent(event.id, { status: 'live' });
-      }
-    });
-  }, [countdownTick, events]);
+    const check = () => {
+      events.forEach(event => {
+        if (event.status === 'open' && event.deadline && new Date(event.deadline) <= new Date() && !autoTransitionedRef.current.has(event.id)) {
+          autoTransitionedRef.current.add(event.id);
+          updateEvent(event.id, { status: 'live' });
+        }
+      });
+    };
+    check();
+    const timer = setInterval(check, 5000);
+    return () => clearInterval(timer);
+  }, [events]);
 
   // ── Exclusive picks helpers (Royal Rumble) ──
   const isExclusivePicksEvent = (event) => event?.name?.toLowerCase().includes('royal rumble');
@@ -947,17 +978,9 @@ const FantasyWrestlingApp = () => {
                     <Calendar className="w-3.5 h-3.5" />
                     {event.date}
                   </p>
-                  {event.status === 'open' && event.deadline && (() => {
-                    const cd = getCountdownText(event.deadline);
-                    if (!cd) return null;
-                    return (
-                      <p className={`text-xs font-semibold flex items-center gap-1.5 mt-1.5 mb-4 ${cd.urgent ? 'text-red-400' : 'text-[--gold]'}`}>
-                        <Clock className="w-3 h-3" />
-                        {cd.expired ? 'Picks Locked' : `Picks lock in ${cd.text}`}
-                      </p>
-                    );
-                  })()}
-                  {!(event.status === 'open' && event.deadline) && <div className="mb-5" />}
+                  {event.status === 'open' && event.deadline ? (
+                    <div className="mt-1.5 mb-4"><CountdownBadge deadline={event.deadline} /></div>
+                  ) : <div className="mb-5" />}
 
                   <div className="space-y-2 mt-auto">
                     {event.status === 'live' && (
@@ -1100,19 +1123,7 @@ const FantasyWrestlingApp = () => {
           </button>
 
           {/* Countdown bar */}
-          {selectedEvent.deadline && (() => {
-            const cd = getCountdownText(selectedEvent.deadline);
-            if (!cd) return null;
-            return (
-              <div className={`mb-4 px-4 py-3 rounded-xl border text-center text-sm font-semibold animate-fadeInUp ${
-                cd.urgent ? 'border-red-500/40 text-red-400' : 'border-[--gold-dark]/40 text-[--gold]'
-              } ${cd.urgent && !cd.expired ? 'glow-pulse' : ''}`}
-                style={{ background: cd.urgent ? 'rgba(239,35,60,0.06)' : 'rgba(201,168,76,0.06)' }}>
-                <Clock className="w-4 h-4 inline mr-2" />
-                {cd.expired ? 'Deadline passed \u2014 picks are locked' : `Picks lock in ${cd.text}`}
-              </div>
-            );
-          })()}
+          {selectedEvent.deadline && <CountdownBadge deadline={selectedEvent.deadline} variant="bar" />}
 
           <div className="rounded-2xl border border-[--border] overflow-hidden animate-fadeInUp" style={{ background: 'var(--bg-surface)' }}>
             {/* Header */}

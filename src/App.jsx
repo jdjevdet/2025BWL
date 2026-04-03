@@ -1,373 +1,347 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users, ChevronUp, ChevronDown, X, Menu } from 'lucide-react';
+import { Trophy, Calendar, Plus, Edit2, Trash2, Save, Award, Lock, Unlock, Users, ChevronUp, ChevronDown, X, Menu, Crown, Zap, Target, Shield, Star, ChevronRight, Hash, TrendingUp, Eye, EyeOff } from 'lucide-react';
 
-// Import Firebase and your configuration
 import { db, storage } from './firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, addDoc, deleteField } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+/* ──────────────────────────────────────────────
+   ADMIN: Add Match Form
+   ────────────────────────────────────────────── */
 const AddMatchForm = ({ eventId, onAddMatch }) => {
-    const [newMatch, setNewMatch] = useState({ title: '', options: ['', ''] });
+  const [newMatch, setNewMatch] = useState({ title: '', options: ['', ''] });
 
-    const handleAddMatch = () => {
-      onAddMatch(eventId, newMatch);
-      setNewMatch({ title: '', options: ['', ''] });
-    };
+  const handleAddMatch = () => {
+    onAddMatch(eventId, newMatch);
+    setNewMatch({ title: '', options: ['', ''] });
+  };
 
-    return (
-      <div className="mt-4 bg-black p-4 rounded-lg border border-gray-800">
-        <h5 className="text-white font-semibold mb-3">Add New Match</h5>
+  return (
+    <div className="mt-5 rounded-xl border border-dashed border-[--border-light] p-5" style={{ background: 'var(--bg-input)' }}>
+      <h5 className="font-outfit font-semibold text-sm text-[--text-secondary] uppercase tracking-wider mb-4">Add New Match</h5>
+      <input
+        type="text"
+        placeholder="Match title"
+        value={newMatch.title}
+        onChange={(e) => setNewMatch({ ...newMatch, title: e.target.value })}
+        className="w-full px-4 py-2.5 rounded-lg text-sm text-white placeholder-[--text-muted] border border-[--border] transition-all"
+        style={{ background: 'var(--bg-surface)' }}
+      />
+      {newMatch.options.map((option, idx) => (
         <input
+          key={idx}
           type="text"
-          placeholder="Match title"
-          value={newMatch.title}
-          onChange={(e) => setNewMatch({ ...newMatch, title: e.target.value })}
-          className="w-full px-3 py-2 rounded bg-gray-900 text-white mb-2 border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
+          placeholder={`Option ${idx + 1}`}
+          value={option}
+          onChange={(e) => {
+            const newOptions = [...newMatch.options];
+            newOptions[idx] = e.target.value;
+            setNewMatch({ ...newMatch, options: newOptions });
+          }}
+          className="w-full px-4 py-2.5 rounded-lg text-sm text-white placeholder-[--text-muted] border border-[--border] mt-2 transition-all"
+          style={{ background: 'var(--bg-surface)' }}
         />
-        {newMatch.options.map((option, idx) => (
-          <input
-            key={idx}
-            type="text"
-            placeholder={`Option ${idx + 1}`}
-            value={option}
-            onChange={(e) => {
-              const newOptions = [...newMatch.options];
-              newOptions[idx] = e.target.value;
-              setNewMatch({ ...newMatch, options: newOptions });
-            }}
-            className="w-full px-3 py-2 rounded bg-gray-900 text-white mb-2 border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
-          />
-        ))}
-        <div className="flex space-x-2">
+      ))}
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={() => setNewMatch({ ...newMatch, options: [...newMatch.options, ''] })}
+          className="px-4 py-2 rounded-lg text-xs font-medium border border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--text-secondary] transition-all"
+          style={{ background: 'var(--bg-elevated)' }}
+        >
+          + Option
+        </button>
+        <button
+          onClick={handleAddMatch}
+          className="btn-gold px-5 py-2 rounded-lg text-xs font-bold"
+        >
+          Add Match
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ──────────────────────────────────────────────
+   ADMIN: Event Editor Card
+   ────────────────────────────────────────────── */
+const EventEditorCard = ({
+  event, isEditing, onSave, onSetEditing, onDelete, onUpdateEvent,
+  onAddMatch, onAddOptionToMatch, onResetPlayerPick, onResetAllPlayerPicks,
+  players, animationDelay, isMinimized, onToggleMinimize,
+}) => {
+  const [localData, setLocalData] = useState(event);
+  const [addingOptionToMatch, setAddingOptionToMatch] = useState(null);
+  const [newOptionText, setNewOptionText] = useState('');
+
+  useEffect(() => { setLocalData(event); }, [event]);
+
+  const handleSave = () => { onSave(event.id, localData); };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const localImageUrl = URL.createObjectURL(file);
+      setLocalData(prev => ({ ...prev, bannerImage: localImageUrl, imageFile: file }));
+    }
+  };
+
+  const handleAddOption = (matchId) => {
+    if (newOptionText.trim()) {
+      onAddOptionToMatch(event.id, matchId, newOptionText.trim());
+      setNewOptionText('');
+      setAddingOptionToMatch(null);
+    }
+  };
+
+  const statusColors = {
+    completed: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+    live: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30' },
+    open: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
+    upcoming: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
+  };
+  const status = statusColors[event.status] || statusColors.upcoming;
+
+  return (
+    <div
+      className="rounded-xl border border-[--border] card-gold-accent animate-fadeInUp"
+      style={{ background: 'var(--bg-surface)', animationDelay }}
+    >
+      {/* Header bar */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[--border]">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <button
-            onClick={() => setNewMatch({ ...newMatch, options: [...newMatch.options, ''] })}
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-all duration-300 border border-gray-700"
+            onClick={() => onToggleMinimize(event.id)}
+            className="p-1.5 rounded-md hover:bg-white/5 text-[--text-muted] hover:text-white transition-all flex-shrink-0"
           >
-            + Add Option
+            {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+          <div className="min-w-0">
+            <h3 className="font-bebas text-xl tracking-wide text-white truncate">{event.name}</h3>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-[--text-muted]">{event.date}</span>
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${status.bg} ${status.text} ${status.border}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${event.status === 'live' ? 'bg-red-400 animate-pulse' : event.status === 'open' ? 'bg-amber-400' : event.status === 'completed' ? 'bg-emerald-400' : 'bg-slate-400'}`} />
+                {event.status}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => isEditing ? handleSave() : onSetEditing(event.id)}
+            className={`p-2 rounded-lg transition-all ${isEditing ? 'btn-gold' : 'border border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--gold-dark]'}`}
+          >
+            {isEditing ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
           </button>
           <button
-            onClick={handleAddMatch}
-            className="px-4 py-2 bg-white hover:bg-gray-200 text-black rounded text-sm transition-all duration-300 transform hover:scale-105"
+            onClick={() => onDelete(event.id)}
+            className="p-2 rounded-lg border border-red-500/20 text-red-400/60 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/5 transition-all"
           >
-            Add Match
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
-    );
-};
 
-const EventEditorCard = ({
-    event,
-    isEditing,
-    onSave,
-    onSetEditing,
-    onDelete,
-    onUpdateEvent,
-    onAddMatch,
-    onAddOptionToMatch,
-    onResetPlayerPick,
-    onResetAllPlayerPicks,
-    players,
-    animationDelay,
-    isMinimized,
-    onToggleMinimize,
-}) => {
-    const [localData, setLocalData] = useState(event);
-    const [addingOptionToMatch, setAddingOptionToMatch] = useState(null); // match.id of match being edited
-    const [newOptionText, setNewOptionText] = useState('');
+      {/* Collapsible body */}
+      <div className={`collapse-section ${isMinimized ? 'max-h-0 opacity-0' : 'max-h-[5000px] opacity-100'}`}>
+        <div className="p-5">
+          {/* Edit form */}
+          {isEditing && (
+            <div className="space-y-3 mb-6 p-4 rounded-lg border border-[--border]" style={{ background: 'var(--bg-elevated)' }}>
+              <input
+                type="text" value={localData.name}
+                onChange={(e) => setLocalData({ ...localData, name: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all"
+                style={{ background: 'var(--bg-input)' }}
+                placeholder="Event name"
+              />
+              <input
+                type="text" value={localData.date}
+                onChange={(e) => setLocalData({ ...localData, date: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all"
+                style={{ background: 'var(--bg-input)' }}
+                placeholder="Event date"
+              />
+              <select
+                value={localData.status}
+                onChange={(e) => setLocalData({ ...localData, status: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all appearance-none"
+                style={{ background: 'var(--bg-input)' }}
+              >
+                <option value="upcoming">Upcoming</option>
+                <option value="open">Open for Picks</option>
+                <option value="live">Live</option>
+                <option value="completed">Completed</option>
+              </select>
+              <label className="block border-2 border-dashed border-[--border-light] rounded-lg p-4 text-center cursor-pointer hover:border-[--gold-dark] transition-all">
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                {localData.bannerImage ? (
+                  <div>
+                    <img src={localData.bannerImage} alt="Preview" className="w-full h-28 object-cover rounded-md mb-2" />
+                    <p className="text-xs text-[--text-muted]">Click to change banner</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[--text-muted]">Click to upload banner image</p>
+                )}
+              </label>
+            </div>
+          )}
 
-    useEffect(() => {
-        setLocalData(event);
-    }, [event]);
-
-    const handleSave = () => {
-        onSave(event.id, localData);
-    };
-
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const localImageUrl = URL.createObjectURL(file);
-            setLocalData(prev => ({ ...prev, bannerImage: localImageUrl, imageFile: file }));
-        }
-    };
-
-    const handleAddOption = (matchId) => {
-        if (newOptionText.trim()) {
-            onAddOptionToMatch(event.id, matchId, newOptionText.trim());
-            setNewOptionText('');
-            setAddingOptionToMatch(null);
-        }
-    };
-
-    return (
-        <div
-          className="bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800 hover:border-gray-600 transition-all duration-300 animate-fadeInUp"
-          style={{ animationDelay }}
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1 pr-4">
-              {isEditing && !isMinimized ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={localData.name}
-                    onChange={(e) => setLocalData({ ...localData, name: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-black text-white border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
-                    placeholder="Event name"
-                  />
-                  <input
-                    type="text"
-                    value={localData.date}
-                    onChange={(e) => setLocalData({ ...localData, date: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-black text-white border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
-                    placeholder="Event date"
-                  />
-                  <select
-                    value={localData.status}
-                    onChange={(e) => setLocalData({ ...localData, status: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-black text-white border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
-                  >
-                    <option value="upcoming">Upcoming</option>
-                    <option value="open">Open for Picks</option>
-                    <option value="live">Live</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 hover:border-white transition-all duration-300">
-                    <label className="cursor-pointer block text-center">
+          {/* Matches */}
+          <div>
+            <h4 className="font-outfit font-semibold text-xs uppercase tracking-widest text-[--text-muted] mb-3">
+              Matches ({event.matches?.length || 0})
+            </h4>
+            <div className="space-y-2">
+              {event.matches && event.matches.map(match => (
+                <div key={match.id} className="rounded-lg border border-[--border] p-4" style={{ background: 'var(--bg-elevated)' }}>
+                  <p className="text-white font-medium text-sm mb-2">{match.title}</p>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {match.options.map((option, idx) => (
+                      <span key={idx} className="px-2.5 py-1 rounded-md text-xs font-medium border border-[--border-light] text-[--text-secondary]" style={{ background: 'var(--bg-input)' }}>
+                        {option}
+                      </span>
+                    ))}
+                    {isEditing && (
+                      <button
+                        onClick={() => setAddingOptionToMatch(addingOptionToMatch === match.id ? null : match.id)}
+                        className="px-2.5 py-1 rounded-md text-xs font-medium border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                      >
+                        + Add
+                      </button>
+                    )}
+                  </div>
+                  {isEditing && addingOptionToMatch === match.id && (
+                    <div className="flex gap-2 mt-3">
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
+                        type="text" placeholder="New option name" value={newOptionText}
+                        onChange={(e) => setNewOptionText(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddOption(match.id)}
+                        className="flex-1 px-3 py-2 rounded-lg text-xs text-white border border-[--border] transition-all"
+                        style={{ background: 'var(--bg-input)' }}
+                        autoFocus
                       />
-                      <div className="text-gray-400 hover:text-white transition-colors">
-                        {localData.bannerImage ? (
-                          <div>
-                            <img src={localData.bannerImage} alt="Preview" className="w-full h-32 object-cover rounded mb-2" />
-                            <p className="text-sm">Click to change banner image</p>
-                          </div>
-                        ) : (
-                          <p>Click to upload banner image</p>
-                        )}
-                      </div>
-                    </label>
+                      <button onClick={() => handleAddOption(match.id)} className="px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all">Add</button>
+                      <button onClick={() => { setAddingOptionToMatch(null); setNewOptionText(''); }} className="px-3 py-2 rounded-lg text-xs text-[--text-secondary] hover:text-white border border-[--border] transition-all" style={{ background: 'var(--bg-input)' }}>Cancel</button>
+                    </div>
+                  )}
+                  {(event.status === 'completed' || event.status === 'live') && (
+                    <select
+                      value={match.winner || ''}
+                      onChange={(e) => {
+                        const updatedMatches = event.matches.map(m => m.id === match.id ? { ...m, winner: e.target.value } : m);
+                        onUpdateEvent(event.id, { matches: updatedMatches });
+                      }}
+                      className="w-full px-3 py-2 rounded-lg text-xs text-white border border-[--border] mt-2 appearance-none transition-all"
+                      style={{ background: 'var(--bg-input)' }}
+                    >
+                      <option value="">Select winner...</option>
+                      {match.options.map((option, idx) => (
+                        <option key={idx} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  )}
+                  {match.winner && (
+                    <p className="text-emerald-400 mt-2 text-xs font-medium flex items-center gap-1">
+                      <Trophy className="w-3 h-3" /> Winner: {match.winner}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {isEditing && <AddMatchForm eventId={event.id} onAddMatch={onAddMatch} />}
+          </div>
+
+          {/* Reset picks section */}
+          {event.status === 'open' && players && players.length > 0 && (
+            <div className="mt-6 p-4 rounded-lg border border-red-500/20" style={{ background: 'rgba(239, 35, 60, 0.04)' }}>
+              <h4 className="font-outfit font-semibold text-xs uppercase tracking-widest text-red-400 mb-3 flex items-center gap-2">
+                <Shield className="w-3.5 h-3.5" /> Reset Player Picks
+              </h4>
+
+              {event.submittedPlayers && event.submittedPlayers.length > 0 && (() => {
+                const playersWithMissingPicks = event.submittedPlayers.filter(playerName => {
+                  const player = players.find(p => p.name === playerName);
+                  if (!player) return true;
+                  const picksForEvent = Object.keys(player.picks || {}).filter(key => key.startsWith(`${event.id}-`));
+                  return picksForEvent.length === 0 || (event.matches && picksForEvent.length < event.matches.length);
+                });
+                if (playersWithMissingPicks.length === 0) return null;
+                return (
+                  <div className="mb-4 p-3 rounded-lg border border-amber-500/20" style={{ background: 'rgba(234, 179, 8, 0.04)' }}>
+                    <p className="text-amber-400 text-xs font-semibold mb-2">Submitted but missing picks:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {playersWithMissingPicks.map(playerName => {
+                        const player = players.find(p => p.name === playerName);
+                        const pickCount = player ? Object.keys(player.picks || {}).filter(key => key.startsWith(`${event.id}-`)).length : 0;
+                        return (
+                          <span key={playerName} className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-amber-500/20 text-amber-300" style={{ background: 'rgba(234, 179, 8, 0.08)' }}>
+                            {playerName} ({pickCount}/{event.matches?.length || 0})
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {event.matches && event.matches.map(match => {
+                const playersWithPicks = players.filter(p => p.picks && p.picks[`${event.id}-${match.id}`]);
+                if (playersWithPicks.length === 0) return null;
+                return (
+                  <div key={match.id} className="mb-3 p-3 rounded-lg" style={{ background: 'var(--bg-elevated)' }}>
+                    <p className="text-white text-xs font-medium mb-2">{match.title}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {playersWithPicks.map(player => (
+                        <button
+                          key={player.id}
+                          onClick={() => onResetPlayerPick(event.id, match.id, player.name)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium border border-red-500/30 text-red-300 hover:bg-red-500/10 transition-all"
+                          title={`Reset ${player.name}'s pick: ${player.picks[`${event.id}-${match.id}`]}`}
+                        >
+                          {player.name}: {player.picks[`${event.id}-${match.id}`]}
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {event.submittedPlayers && event.submittedPlayers.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-red-500/10">
+                  <p className="text-[--text-muted] text-xs mb-2">Reset all picks & allow re-submission:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {event.submittedPlayers.map(playerName => (
+                      <button
+                        key={playerName}
+                        onClick={() => onResetAllPlayerPicks(event.id, playerName)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/30 text-red-300 hover:bg-red-500/10 transition-all"
+                      >
+                        Reset: {playerName} <X className="w-3 h-3" />
+                      </button>
+                    ))}
                   </div>
                 </div>
-              ) : (
-                <>
-                  <h3 className="text-2xl font-bold text-white">{event.name}</h3>
-                  <p className="text-gray-400">{event.date}</p>
-                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold border ${
-                    event.status === 'completed' ? 'border-green-500 text-green-500 bg-green-500/10' :
-                    event.status === 'live' ? 'border-red-500 text-red-500 bg-red-500/10' :
-                    event.status === 'open' ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' :
-                    'border-gray-500 text-gray-500 bg-gray-500/10'
-                  }`}>
-                    {event.status.toUpperCase()}
-                  </span>
-                  {event.bannerImage && !isMinimized && (
-                    <div className="mt-3">
-                      <img src={event.bannerImage} alt={event.name} className="w-48 h-24 object-cover rounded border border-gray-700" />
-                    </div>
-                  )}
-                </>
               )}
             </div>
-            <div className="flex space-x-2 flex-shrink-0">
-               <button
-                onClick={() => onToggleMinimize(event.id)}
-                className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300"
-              >
-                {isMinimized ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
-              </button>
-              <button
-                onClick={() => isEditing ? handleSave() : onSetEditing(event.id)}
-                className="p-2 bg-white hover:bg-gray-200 text-black rounded-lg transition-all duration-300"
-              >
-                {isEditing ? <Save className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
-              </button>
-              <button
-                onClick={() => onDelete(event.id)}
-                className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMinimized ? 'max-h-0' : 'max-h-screen'}`}>
-              <div className="mt-6">
-                <h4 className="text-lg font-semibold text-white mb-3">Matches</h4>
-                <div className="space-y-3">
-                  {event.matches && event.matches.map(match => (
-                    <div key={match.id} className="bg-black p-4 rounded-lg border border-gray-800">
-                      <p className="text-white font-semibold mb-2">{match.title}</p>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {match.options.map((option, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-sm border border-gray-700">
-                            {option}
-                          </span>
-                        ))}
-                        {/* Add Option button - only show when editing */}
-                        {isEditing && (
-                          <button
-                            onClick={() => setAddingOptionToMatch(addingOptionToMatch === match.id ? null : match.id)}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm border border-green-500 transition-all duration-300"
-                          >
-                            + Add Option
-                          </button>
-                        )}
-                      </div>
-                      {/* Add Option input field */}
-                      {isEditing && addingOptionToMatch === match.id && (
-                        <div className="flex gap-2 mb-2 mt-3">
-                          <input
-                            type="text"
-                            placeholder="New option name"
-                            value={newOptionText}
-                            onChange={(e) => setNewOptionText(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleAddOption(match.id)}
-                            className="flex-1 px-3 py-2 rounded bg-gray-900 text-white text-sm border border-gray-700 focus:border-green-500 focus:outline-none transition-all duration-300"
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => handleAddOption(match.id)}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-all duration-300"
-                          >
-                            Add
-                          </button>
-                          <button
-                            onClick={() => { setAddingOptionToMatch(null); setNewOptionText(''); }}
-                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-all duration-300"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                      {(event.status === 'completed' || event.status === 'live') && (
-                        <select
-                          value={match.winner || ''}
-                          onChange={(e) => {
-                            const updatedMatches = event.matches.map(m =>
-                              m.id === match.id ? { ...m, winner: e.target.value } : m
-                            );
-                            onUpdateEvent(event.id, { matches: updatedMatches });
-                          }}
-                          className="w-full px-3 py-2 rounded bg-gray-900 text-white text-sm border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
-                        >
-                          <option value="">Select winner...</option>
-                          {match.options.map((option, idx) => (
-                            <option key={idx} value={option}>{option}</option>
-                          ))}
-                        </select>
-                      )}
-                      {match.winner && (
-                        <p className="text-green-400 mt-2 text-sm">Winner: {match.winner}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                { isEditing && <AddMatchForm eventId={event.id} onAddMatch={onAddMatch} /> }
-              </div>
-
-              {/* Reset Player Picks Section - Only show for open events */}
-              {event.status === 'open' && players && players.length > 0 && (
-                <div className="mt-6 bg-red-900/20 p-4 rounded-lg border border-red-800">
-                  <h4 className="text-lg font-semibold text-red-400 mb-3">Reset Player Picks</h4>
-                  
-                  {/* Warning: Players marked as submitted but with missing picks */}
-                  {event.submittedPlayers && event.submittedPlayers.length > 0 && (() => {
-                    const playersWithMissingPicks = event.submittedPlayers.filter(playerName => {
-                      const player = players.find(p => p.name === playerName);
-                      if (!player) return true; // Player not found
-                      const picksForEvent = Object.keys(player.picks || {}).filter(key => key.startsWith(`${event.id}-`));
-                      return picksForEvent.length === 0 || (event.matches && picksForEvent.length < event.matches.length);
-                    });
-                    
-                    if (playersWithMissingPicks.length === 0) return null;
-                    
-                    return (
-                      <div className="mb-4 bg-yellow-900/30 p-3 rounded-lg border border-yellow-600">
-                        <p className="text-yellow-400 text-sm font-semibold mb-2">⚠️ Submitted but missing picks:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {playersWithMissingPicks.map(playerName => {
-                            const player = players.find(p => p.name === playerName);
-                            const pickCount = player ? Object.keys(player.picks || {}).filter(key => key.startsWith(`${event.id}-`)).length : 0;
-                            return (
-                              <span key={playerName} className="px-3 py-1 bg-yellow-800 text-yellow-200 rounded text-xs">
-                                {playerName} ({pickCount}/{event.matches?.length || 0} picks)
-                              </span>
-                            );
-                          })}
-                        </div>
-                        <p className="text-yellow-400/70 text-xs mt-2">Use "Reset All" below to let these players re-submit.</p>
-                      </div>
-                    );
-                  })()}
-                  
-                  {/* Per-match pick reset */}
-                  {event.matches && event.matches.map(match => {
-                    // Find all players who have picked for this match
-                    const playersWithPicks = players.filter(p => 
-                      p.picks && p.picks[`${event.id}-${match.id}`]
-                    );
-                    
-                    if (playersWithPicks.length === 0) return null;
-                    
-                    return (
-                      <div key={match.id} className="mb-4 bg-black/50 p-3 rounded-lg">
-                        <p className="text-white text-sm font-semibold mb-2">{match.title}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {playersWithPicks.map(player => (
-                            <button
-                              key={player.id}
-                              onClick={() => onResetPlayerPick(event.id, match.id, player.name)}
-                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-all duration-300 flex items-center space-x-1"
-                              title={`Reset ${player.name}'s pick: ${player.picks[`${event.id}-${match.id}`]}`}
-                            >
-                              <span>{player.name}: {player.picks[`${event.id}-${match.id}`]}</span>
-                              <X className="w-3 h-3" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Reset all picks for a player */}
-                  {event.submittedPlayers && event.submittedPlayers.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-red-800">
-                      <p className="text-gray-400 text-sm mb-2">Reset ALL picks & allow re-submission:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {event.submittedPlayers.map(playerName => (
-                          <button
-                            key={playerName}
-                            onClick={() => onResetAllPlayerPicks(event.id, playerName)}
-                            className="px-4 py-2 bg-red-800 hover:bg-red-900 text-white rounded-lg text-sm transition-all duration-300 flex items-center space-x-2"
-                          >
-                            <span>Reset All: {playerName}</span>
-                            <X className="w-4 h-4" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          )}
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 
+/* ══════════════════════════════════════════════
+   MAIN APP COMPONENT
+   ══════════════════════════════════════════════ */
 const FantasyWrestlingApp = () => {
   const [currentView, setCurrentView] = useState('home');
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [particles, setParticles] = useState([]);
   const [minimizedEvents, setMinimizedEvents] = useState([]);
   const [isPlayerManagementMinimized, setIsPlayerManagementMinimized] = useState(false);
   const [isHallOfFameMinimized, setIsHallOfFameMinimized] = useState(false);
@@ -376,7 +350,6 @@ const FantasyWrestlingApp = () => {
   const [events, setEvents] = useState([]);
   const [players, setPlayers] = useState([]);
   const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
-
   const [editingEvent, setEditingEvent] = useState(null);
 
   const historicalScores = {
@@ -390,1382 +363,1169 @@ const FantasyWrestlingApp = () => {
   };
   const historicalEventNames = Object.keys(historicalScores);
 
+  // ── Firebase subscriptions ──
   useEffect(() => {
     const unsubscribeEvents = onSnapshot(collection(db, "events"), (snapshot) => {
-        const eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setEvents(eventsData);
+      setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-
     const unsubscribePlayers = onSnapshot(collection(db, "players"), (snapshot) => {
-        const playersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setPlayers(playersData);
+      setPlayers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-
     const unsubscribeHoF = onSnapshot(collection(db, "hallOfFame"), (snapshot) => {
-        const hofData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setHallOfFameEntries(hofData);
+      setHallOfFameEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    
-    return () => {
-        unsubscribeEvents();
-        unsubscribePlayers();
-        unsubscribeHoF();
-    };
+    return () => { unsubscribeEvents(); unsubscribePlayers(); unsubscribeHoF(); };
   }, []);
 
-  const sortedEvents = useMemo(() => {
-    return [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
-  }, [events]);
+  const sortedEvents = useMemo(() => [...events].sort((a, b) => new Date(a.date) - new Date(b.date)), [events]);
 
-  // Helper function to check if an event is the Royal Rumble (exclusive picks mode)
-  const isExclusivePicksEvent = (event) => {
-    return event?.name?.toLowerCase().includes('royal rumble');
-  };
+  // ── Exclusive picks helpers (Royal Rumble) ──
+  const isExclusivePicksEvent = (event) => event?.name?.toLowerCase().includes('royal rumble');
 
-  // Helper function to check if a specific match should use exclusive picks mode
   const isExclusivePicksMatch = (event, matchTitle) => {
     if (!isExclusivePicksEvent(event)) return false;
-    
-    // Normalize the match title: lowercase and replace all types of quotes/apostrophes with regular apostrophe
-    const normalizedTitle = matchTitle?.toLowerCase()
-      .replace(/['''`´]/g, "'")  // Replace all quote variants with regular apostrophe
-      .trim();
-    
-    const exclusiveMatchTitles = [
-      "men's royal rumble match",
-      "women's royal rumble match"
-    ];
-    return exclusiveMatchTitles.includes(normalizedTitle);
+    const normalizedTitle = matchTitle?.toLowerCase().replace(/['''`´]/g, "'").trim();
+    return ["men's royal rumble match", "women's royal rumble match"].includes(normalizedTitle);
   };
 
-  // Helper function to check if an option is exempt from exclusive picks (e.g., "OTHER")
-  const isExemptFromExclusive = (option) => {
-    return option?.toLowerCase() === 'other';
-  };
+  const isExemptFromExclusive = (option) => option?.toLowerCase() === 'other';
 
-  // Helper function to get all players who picked OTHER for a specific match (excluding current user)
   const getOtherPickers = (eventId, matchId, currentPlayerName) => {
     const pickKey = `${eventId}-${matchId}`;
     const otherPickers = [];
-    
     players.forEach(player => {
       if (player.name !== currentPlayerName && player.picks && player.picks[pickKey]) {
-        if (isExemptFromExclusive(player.picks[pickKey])) {
-          otherPickers.push(player.name);
-        }
+        if (isExemptFromExclusive(player.picks[pickKey])) otherPickers.push(player.name);
       }
     });
-    
-    return otherPickers; // Returns array of player names who picked OTHER
+    return otherPickers;
   };
 
-  // Helper function to get picks taken by OTHER players for a specific match
   const getPicksTakenByOthers = (eventId, matchId, currentPlayerName) => {
     const pickKey = `${eventId}-${matchId}`;
     const takenPicks = {};
-    
     players.forEach(player => {
       if (player.name !== currentPlayerName && player.picks && player.picks[pickKey]) {
         const pick = player.picks[pickKey];
-        // Don't mark exempt options (like "OTHER") as taken
-        if (!isExemptFromExclusive(pick)) {
-          takenPicks[pick] = player.name;
+        if (!isExemptFromExclusive(pick)) takenPicks[pick] = player.name;
+      }
+    });
+    return takenPicks;
+  };
+
+  // ── Score calculations ──
+  const calculateTotalPoints = (player, allEvents) => {
+    let historicalTotal = 0;
+    if (player.name) {
+      historicalEventNames.forEach(eventName => {
+        if (historicalScores[eventName]?.[player.name] !== undefined)
+          historicalTotal += historicalScores[eventName][player.name];
+      });
+    }
+    let firebaseTotal = 0;
+    allEvents.forEach(event => {
+      if (!historicalEventNames.includes(event.name.toUpperCase())) {
+        if ((event.status === 'completed' || event.status === 'live') && event.matches) {
+          event.matches.forEach(match => {
+            const pickKey = `${event.id}-${match.id}`;
+            if (match.winner && player.picks && player.picks[pickKey] === match.winner) firebaseTotal += 1;
+          });
         }
       }
     });
-    
-    return takenPicks; // Returns { "option": "playerName who picked it" }
+    return historicalTotal + firebaseTotal + (player.bonusPoints || 0);
   };
-
-  useEffect(() => {
-    const newParticles = Array.from({ length: 100 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 6 + 3,
-      duration: Math.random() * 13 + 9,
-      delay: Math.random() * 7,
-      initialDirectionX: (Math.random() - 0.5) * 2,
-      initialDirectionY: (Math.random() - 0.5) * 2,
-    }));
-    setParticles(newParticles);
-  }, []);
-
-  // Removed auto-selection of first player - users must explicitly select their name
-  // This ensures exclusive picks show correctly for all players
-  
-  const calculateTotalPoints = (player, allEvents) => {
-    let historicalTotal = 0;
-    if(player.name){
-        historicalEventNames.forEach(eventName => {
-            if (historicalScores[eventName] && historicalScores[eventName][player.name] !== undefined) {
-                historicalTotal += historicalScores[eventName][player.name];
-            }
-        });
-    }
-
-    let firebaseTotal = 0;
-    allEvents.forEach(event => {
-        if (!historicalEventNames.includes(event.name.toUpperCase())) {
-            if ((event.status === 'completed' || event.status === 'live') && event.matches) {
-                event.matches.forEach(match => {
-                    const pickKey = `${event.id}-${match.id}`;
-                    if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
-                        firebaseTotal += 1;
-                    }
-                });
-            }
-        }
-    });
-
-    // Add manual bonus points (for OTHER picks that won, etc.)
-    const bonusPoints = player.bonusPoints || 0;
-
-    return historicalTotal + firebaseTotal + bonusPoints;
-  }
 
   const toggleMinimizeEvent = (eventId) => {
-    setMinimizedEvents(prev => 
-        prev.includes(eventId) 
-            ? prev.filter(id => id !== eventId)
-            : [...prev, eventId]
-    );
+    setMinimizedEvents(prev => prev.includes(eventId) ? prev.filter(id => id !== eventId) : [...prev, eventId]);
   };
 
+  // ── Firebase CRUD ──
   const handlePicksSubmitted = async (eventId, playerName) => {
     const eventRef = doc(db, "events", eventId);
     const event = events.find(e => e.id === eventId);
     if (event) {
-        const submittedPlayers = event.submittedPlayers || [];
-        if (!submittedPlayers.includes(playerName)) {
-            await setDoc(eventRef, { submittedPlayers: [...submittedPlayers, playerName] }, { merge: true });
-        }
+      const submittedPlayers = event.submittedPlayers || [];
+      if (!submittedPlayers.includes(playerName)) {
+        await setDoc(eventRef, { submittedPlayers: [...submittedPlayers, playerName] }, { merge: true });
+      }
     }
   };
 
-  // Admin function to reset a player's pick for a specific match
   const resetPlayerPick = async (eventId, matchId, playerName) => {
-    if (!isAdmin) {
-        alert("Only admins can reset picks.");
-        return;
-    }
-    
+    if (!isAdmin) { alert("Only admins can reset picks."); return; }
     const player = players.find(p => p.name === playerName);
-    if (!player) {
-        alert("Player not found.");
-        return;
-    }
-
+    if (!player) { alert("Player not found."); return; }
     const event = events.find(e => e.id === eventId);
     const match = event?.matches?.find(m => m.id === matchId);
     const matchTitle = match?.title || 'this match';
-
-    const confirmReset = window.confirm(`Are you sure you want to reset ${playerName}'s pick for "${matchTitle}"?`);
-    if (!confirmReset) return;
-
+    if (!window.confirm(`Reset ${playerName}'s pick for "${matchTitle}"?`)) return;
     try {
-        // Remove only the specific pick for this match using deleteField()
-        const pickKey = `${eventId}-${matchId}`;
-        
-        const playerRef = doc(db, "players", player.id);
-        await setDoc(playerRef, { 
-            picks: { 
-                [pickKey]: deleteField() 
-            } 
-        }, { merge: true });
-
-        alert(`${playerName}'s pick for "${matchTitle}" has been reset.`);
+      const pickKey = `${eventId}-${matchId}`;
+      await setDoc(doc(db, "players", player.id), { picks: { [pickKey]: deleteField() } }, { merge: true });
+      alert(`${playerName}'s pick for "${matchTitle}" has been reset.`);
     } catch (error) {
-        console.error("Error resetting player pick: ", error);
-        alert("Failed to reset pick.");
+      console.error("Error resetting player pick: ", error);
+      alert("Failed to reset pick.");
     }
   };
 
-  // Admin function to reset ALL of a player's picks for an event and allow re-submission
   const resetAllPlayerPicks = async (eventId, playerName) => {
-    if (!isAdmin) {
-        alert("Only admins can reset picks.");
-        return;
-    }
-    
+    if (!isAdmin) { alert("Only admins can reset picks."); return; }
     const player = players.find(p => p.name === playerName);
-    if (!player) {
-        alert("Player not found.");
-        return;
-    }
-
-    const confirmReset = window.confirm(`Are you sure you want to reset ALL picks for ${playerName} for this event? This will also allow them to re-submit their picks.`);
-    if (!confirmReset) return;
-
+    if (!player) { alert("Player not found."); return; }
+    if (!window.confirm(`Reset ALL picks for ${playerName} for this event?`)) return;
     try {
-        // Build an object with deleteField() for each pick to remove
-        const picksToDelete = {};
-        Object.keys(player.picks || {}).forEach(key => {
-            if (key.startsWith(`${eventId}-`)) {
-                picksToDelete[key] = deleteField();
-            }
-        });
-        
-        // Only update if there are picks to delete
-        if (Object.keys(picksToDelete).length > 0) {
-            const playerRef = doc(db, "players", player.id);
-            await setDoc(playerRef, { picks: picksToDelete }, { merge: true });
-        }
-
-        // Remove player from submittedPlayers list for this event
-        const event = events.find(e => e.id === eventId);
-        if (event && event.submittedPlayers?.includes(playerName)) {
-            const eventRef = doc(db, "events", eventId);
-            const updatedSubmitted = event.submittedPlayers.filter(name => name !== playerName);
-            await setDoc(eventRef, { submittedPlayers: updatedSubmitted }, { merge: true });
-        }
-
-        alert(`All picks for ${playerName} have been reset. They can now make new picks.`);
+      const picksToDelete = {};
+      Object.keys(player.picks || {}).forEach(key => {
+        if (key.startsWith(`${eventId}-`)) picksToDelete[key] = deleteField();
+      });
+      if (Object.keys(picksToDelete).length > 0) {
+        await setDoc(doc(db, "players", player.id), { picks: picksToDelete }, { merge: true });
+      }
+      const event = events.find(e => e.id === eventId);
+      if (event?.submittedPlayers?.includes(playerName)) {
+        await setDoc(doc(db, "events", eventId), { submittedPlayers: event.submittedPlayers.filter(name => name !== playerName) }, { merge: true });
+      }
+      alert(`All picks for ${playerName} have been reset.`);
     } catch (error) {
-        console.error("Error resetting player picks: ", error);
-        alert("Failed to reset picks.");
+      console.error("Error resetting player picks: ", error);
+      alert("Failed to reset picks.");
     }
   };
 
   const handleAdminLogin = () => {
-    if (adminPassword === 'ssj') {
-      setIsAdmin(true);
-      setCurrentView('admin');
-    } else {
-      alert('Incorrect password');
-    }
+    if (adminPassword === 'ssj') { setIsAdmin(true); setCurrentView('admin'); }
+    else alert('Incorrect password');
   };
 
   const createNewEvent = async () => {
-    const newEventData = {
-      name: 'NEW EVENT',
-      date: 'TBD',
-      status: 'upcoming',
-      bannerImage: null,
-      matches: [],
-      submittedPlayers: []
-    };
     try {
-        const docRef = await addDoc(collection(db, "events"), newEventData);
-        setEditingEvent(docRef.id);
+      const docRef = await addDoc(collection(db, "events"), { name: 'NEW EVENT', date: 'TBD', status: 'upcoming', bannerImage: null, matches: [], submittedPlayers: [] });
+      setEditingEvent(docRef.id);
     } catch (error) {
-        console.error("Error creating new event:", error);
-        alert("Could not create new event. Check Firestore security rules and console for details.");
+      console.error("Error creating new event:", error);
+      alert("Could not create new event.");
     }
   };
-  
+
   const updateEvent = async (eventId, dataFromState) => {
     try {
-        const eventDataToSave = { ...dataFromState };
-        const eventRef = doc(db, "events", eventId);
-
-        if (dataFromState.imageFile) {
-            const imageFile = dataFromState.imageFile;
-            const storageRef = ref(storage, `event_banners/${eventId}_${imageFile.name}`);
-            const uploadResult = await uploadBytes(storageRef, imageFile);
-            const downloadURL = await getDownloadURL(uploadResult.ref);
-            eventDataToSave.bannerImage = downloadURL;
-        }
-
-        delete eventDataToSave.imageFile;
-        delete eventDataToSave.id;
-
-        await setDoc(eventRef, eventDataToSave, { merge: true });
-
+      const eventDataToSave = { ...dataFromState };
+      if (dataFromState.imageFile) {
+        const imageFile = dataFromState.imageFile;
+        const storageRef = ref(storage, `event_banners/${eventId}_${imageFile.name}`);
+        const uploadResult = await uploadBytes(storageRef, imageFile);
+        eventDataToSave.bannerImage = await getDownloadURL(uploadResult.ref);
+      }
+      delete eventDataToSave.imageFile;
+      delete eventDataToSave.id;
+      await setDoc(doc(db, "events", eventId), eventDataToSave, { merge: true });
     } catch (error) {
-        console.error("ERROR UPDATING EVENT:", error);
-        alert(`Failed to save event. Check Firestore security rules. Error: ${error.message}`);
+      console.error("ERROR UPDATING EVENT:", error);
+      alert(`Failed to save event. Error: ${error.message}`);
     }
   };
-
 
   const deleteEvent = async (eventId) => {
     try {
-        await deleteDoc(doc(db, "events", eventId));
-        if (editingEvent === eventId) {
-            setEditingEvent(null);
-        }
-    } catch (error) {
-        console.error("Error deleting event: ", error);
-        alert("Failed to delete event.");
-    }
+      await deleteDoc(doc(db, "events", eventId));
+      if (editingEvent === eventId) setEditingEvent(null);
+    } catch (error) { console.error("Error deleting event: ", error); alert("Failed to delete event."); }
   };
 
   const addMatch = async (eventId, newMatch) => {
     if (newMatch.title && newMatch.options.filter(o => o).length >= 2) {
       const event = events.find(e => e.id === eventId);
       if (!event) return;
-
-      const newMatchData = {
-        id: Date.now().toString(),
-        title: newMatch.title,
-        options: newMatch.options.filter(o => o),
-        winner: null
-      };
-      
-      const updatedMatches = [...(event.matches || []), newMatchData];
+      const newMatchData = { id: Date.now().toString(), title: newMatch.title, options: newMatch.options.filter(o => o), winner: null };
       try {
-        await setDoc(doc(db, "events", eventId), { matches: updatedMatches }, { merge: true });
-      } catch (error) {
-        console.error("Error adding match: ", error);
-        alert("Failed to add match.");
-      }
+        await setDoc(doc(db, "events", eventId), { matches: [...(event.matches || []), newMatchData] }, { merge: true });
+      } catch (error) { console.error("Error adding match: ", error); alert("Failed to add match."); }
     }
   };
 
-  // Add a new option to an existing match
   const addOptionToMatch = async (eventId, matchId, newOption) => {
     const event = events.find(e => e.id === eventId);
     if (!event) return;
-
     const match = event.matches?.find(m => m.id === matchId);
     if (!match) return;
-
-    // Check if option already exists
-    if (match.options.includes(newOption)) {
-      alert("This option already exists.");
-      return;
-    }
-
-    const updatedMatches = event.matches.map(m => 
-      m.id === matchId 
-        ? { ...m, options: [...m.options, newOption] }
-        : m
-    );
-
+    if (match.options.includes(newOption)) { alert("This option already exists."); return; }
+    const updatedMatches = event.matches.map(m => m.id === matchId ? { ...m, options: [...m.options, newOption] } : m);
     try {
       await setDoc(doc(db, "events", eventId), { matches: updatedMatches }, { merge: true });
-    } catch (error) {
-      console.error("Error adding option to match: ", error);
-      alert("Failed to add option.");
-    }
+    } catch (error) { console.error("Error adding option to match: ", error); alert("Failed to add option."); }
   };
-  
+
   const submitPick = async (eventId, matchId, pick) => {
-    if (!currentUser) {
-        alert("Please select a player before making picks.");
-        return;
-    }
-    
-    // Check if this is an exclusive picks match and if the pick is already taken
-    // (exempt options like "OTHER" can be picked by multiple people)
+    if (!currentUser) { alert("Please select a player before making picks."); return; }
     const event = events.find(e => e.id === eventId);
     const match = event?.matches?.find(m => m.id === matchId);
     if (isExclusivePicksMatch(event, match?.title) && !isExemptFromExclusive(pick)) {
-        const takenPicks = getPicksTakenByOthers(eventId, matchId, currentUser);
-        if (takenPicks[pick]) {
-            alert(`This pick has already been taken by ${takenPicks[pick]}. Please choose another option.`);
-            return;
-        }
+      const takenPicks = getPicksTakenByOthers(eventId, matchId, currentUser);
+      if (takenPicks[pick]) { alert(`This pick has already been taken by ${takenPicks[pick]}.`); return; }
     }
-    
     const player = players.find(p => p.name === currentUser);
     if (player) {
-        try {
-            const playerRef = doc(db, "players", player.id);
-            const updatedPicks = { ...player.picks, [`${eventId}-${matchId}`]: pick };
-            await setDoc(playerRef, { picks: updatedPicks }, { merge: true });
-        } catch (error) {
-            console.error("Error submitting pick: ", error);
-            alert("Failed to submit pick.");
-        }
+      try {
+        await setDoc(doc(db, "players", player.id), { picks: { ...player.picks, [`${eventId}-${matchId}`]: pick } }, { merge: true });
+      } catch (error) { console.error("Error submitting pick: ", error); alert("Failed to submit pick."); }
     }
   };
 
   const deletePlayer = async (playerId) => {
     try {
-        const playerToDelete = players.find(p => p.id === playerId);
-        if(playerToDelete && playerToDelete.name === currentUser){
-            const otherPlayers = players.filter(p => p.id !== playerId);
-            setCurrentUser(otherPlayers.length > 0 ? otherPlayers[0].name : null);
-        }
-        await deleteDoc(doc(db, "players", playerId));
-    } catch (error) {
-        console.error("Error deleting player: ", error);
-        alert("Failed to delete player.");
-    }
+      const playerToDelete = players.find(p => p.id === playerId);
+      if (playerToDelete?.name === currentUser) {
+        const otherPlayers = players.filter(p => p.id !== playerId);
+        setCurrentUser(otherPlayers.length > 0 ? otherPlayers[0].name : null);
+      }
+      await deleteDoc(doc(db, "players", playerId));
+    } catch (error) { console.error("Error deleting player: ", error); alert("Failed to delete player."); }
   };
-  
+
   const addPlayer = async (playerName) => {
     if (playerName.trim()) {
-        const newPlayer = {
-          name: playerName.trim(),
-          picks: {}
-        };
-        try {
-            await addDoc(collection(db, "players"), newPlayer);
-        } catch (error) {
-            console.error("Error adding player: ", error);
-            alert("Failed to add player.");
-        }
-      }
+      try { await addDoc(collection(db, "players"), { name: playerName.trim(), picks: {} }); }
+      catch (error) { console.error("Error adding player: ", error); alert("Failed to add player."); }
+    }
   };
 
-  // Admin function to adjust a player's bonus points
   const adjustBonusPoints = async (playerId, adjustment) => {
-    if (!isAdmin) {
-        alert("Only admins can adjust points.");
-        return;
-    }
-    
+    if (!isAdmin) { alert("Only admins can adjust points."); return; }
     const player = players.find(p => p.id === playerId);
-    if (!player) {
-        alert("Player not found.");
-        return;
-    }
-
+    if (!player) { alert("Player not found."); return; }
     try {
-        const currentBonus = player.bonusPoints || 0;
-        const newBonus = currentBonus + adjustment;
-        
-        const playerRef = doc(db, "players", playerId);
-        await setDoc(playerRef, { bonusPoints: newBonus }, { merge: true });
-    } catch (error) {
-        console.error("Error adjusting bonus points: ", error);
-        alert("Failed to adjust points.");
-    }
+      await setDoc(doc(db, "players", playerId), { bonusPoints: (player.bonusPoints || 0) + adjustment }, { merge: true });
+    } catch (error) { console.error("Error adjusting bonus points: ", error); alert("Failed to adjust points."); }
   };
 
   const addHallOfFameEntry = async (newEntry) => {
     try {
-        const { imageFile, ...rest } = newEntry;
-        let imageUrl = newEntry.imageUrl || null;
-
-        if (imageFile) {
-            const storageRef = ref(storage, `hall_of_fame/${Date.now()}_${imageFile.name}`);
-            await uploadBytes(storageRef, imageFile);
-            imageUrl = await getDownloadURL(storageRef);
-        }
-        delete rest.imageUrl;
-        await addDoc(collection(db, "hallOfFame"), { ...rest, imageUrl });
-    } catch(error) {
-        console.error("Error adding Hall of Fame entry: ", error);
-        alert("Failed to add Hall of Fame entry.");
-    }
+      const { imageFile, ...rest } = newEntry;
+      let imageUrl = newEntry.imageUrl || null;
+      if (imageFile) {
+        const storageRef = ref(storage, `hall_of_fame/${Date.now()}_${imageFile.name}`);
+        await uploadBytes(storageRef, imageFile);
+        imageUrl = await getDownloadURL(storageRef);
+      }
+      delete rest.imageUrl;
+      await addDoc(collection(db, "hallOfFame"), { ...rest, imageUrl });
+    } catch (error) { console.error("Error adding Hall of Fame entry: ", error); alert("Failed to add Hall of Fame entry."); }
   };
 
   const updateHallOfFameEntry = async (id, updates) => {
     try {
-        const { imageFile, ...rest } = updates;
-        let imageUrl = updates.imageUrl || null;
-
-        if (imageFile) {
-            const storageRef = ref(storage, `hall_of_fame/${id}_${imageFile.name}`);
-            await uploadBytes(storageRef, imageFile);
-            imageUrl = await getDownloadURL(storageRef);
-        }
-        delete rest.imageUrl;
-        await setDoc(doc(db, "hallOfFame", id), { ...rest, imageUrl }, { merge: true });
-    } catch (error) {
-        console.error("Error updating Hall of Fame entry: ", error);
-        alert("Failed to update Hall of Fame entry.");
-    }
+      const { imageFile, ...rest } = updates;
+      let imageUrl = updates.imageUrl || null;
+      if (imageFile) {
+        const storageRef = ref(storage, `hall_of_fame/${id}_${imageFile.name}`);
+        await uploadBytes(storageRef, imageFile);
+        imageUrl = await getDownloadURL(storageRef);
+      }
+      delete rest.imageUrl;
+      await setDoc(doc(db, "hallOfFame", id), { ...rest, imageUrl }, { merge: true });
+    } catch (error) { console.error("Error updating Hall of Fame entry: ", error); alert("Failed to update."); }
   };
 
   const deleteHallOfFameEntry = async (id) => {
-    try {
-        await deleteDoc(doc(db, "hallOfFame", id));
-    } catch (error) {
-        console.error("Error deleting Hall of Fame entry: ", error);
-        alert("Failed to delete Hall of Fame entry.");
-    }
+    try { await deleteDoc(doc(db, "hallOfFame", id)); }
+    catch (error) { console.error("Error deleting Hall of Fame entry: ", error); alert("Failed to delete."); }
   };
 
-  const FloatingParticles = React.memo(() => (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {particles.map(p => (
-        <div
-          key={p.id}
-          className="absolute rounded-full bg-gray-800"
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: `${p.size}px`,
-            height: `${p.size}px`,
-            animation: `drift-${p.id} ${p.duration}s ease-in-out infinite`,
-            animationDelay: `${p.delay}s`,
-            opacity: '0.9',
-          }}
-        />
-      ))}
-      <style>{`
-        ${particles.map(p => `
-            @keyframes drift-${p.id} {
-                0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.8; }
-                25% { transform: translate3d(${p.initialDirectionX * 50}px, ${p.initialDirectionY * 50}px, 0) scale(1.5); opacity: 0.4; }
-                50% { transform: translate3d(${-p.initialDirectionX * 40}px, ${-p.initialDirectionY * 40}px, 0) scale(1.8); opacity: 1; }
-                75% { transform: translate3d(${p.initialDirectionX * 30}px, ${p.initialDirectionY * 30}px, 0) scale(1.2); opacity: 0.6; }
-                100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.8; }
-            }
-        `).join('')}
-      `}</style>
-    </div>
-  ));
 
-  const Navigation = () => (
-    <nav className="bg-black text-white shadow-xl border-b border-gray-800 relative z-10">
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     NAVIGATION
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const Navigation = () => {
+    const navItems = [
+      { key: 'home', label: 'Events', icon: Calendar },
+      { key: 'standings', label: 'Standings', icon: TrendingUp },
+      { key: 'halloffame', label: 'Hall of Fame', icon: Crown },
+    ];
+
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(7, 7, 11, 0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-                <div className="flex items-center space-x-4">
-                    <button onClick={() => setCurrentView('home')} className="text-xl font-bold tracking-wider hover:text-gray-400 transition-all duration-300">
-                        BWL <span className="text-gray-400">FANTASY</span>
-                    </button>
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-2 ml-4">
-                        <button onClick={() => setCurrentView('home')} className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${currentView === 'home' ? 'bg-white text-black' : 'hover:bg-gray-900'}`}>Events</button>
-                        <button onClick={() => setCurrentView('standings')} className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${currentView === 'standings' ? 'bg-white text-black' : 'hover:bg-gray-900'}`}>Standings</button>
-                        <button onClick={() => setCurrentView('halloffame')} className={`px-3 py-2 rounded-lg transition-all duration-300 text-sm ${currentView === 'halloffame' ? 'bg-white text-black' : 'hover:bg-gray-900'}`}>Hall of Fame</button>
-                    </div>
-                </div>
-
-                <div className="flex items-center space-x-4">
-                    <button onClick={() => isAdmin ? setCurrentView('admin') : setCurrentView('login')} className="flex items-center space-x-2 bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-lg transition-all duration-300 text-sm">
-                        {isAdmin ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                        <span>Admin</span>
-                    </button>
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden">
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-                            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-            <div className="md:hidden">
-                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                    <button onClick={() => { setCurrentView('home'); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${currentView === 'home' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>Events</button>
-                    <button onClick={() => { setCurrentView('standings'); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${currentView === 'standings' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>Standings</button>
-                    <button onClick={() => { setCurrentView('halloffame'); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${currentView === 'halloffame' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>Hall of Fame</button>
-                </div>
-            </div>
-        )}
-    </nav>
-);
-
-  const HomeView = ({ events }) => (
-    <div className="min-h-screen bg-black p-8 relative">
-      <FloatingParticles />
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold text-white mb-4">
-            BWL <span className="text-gray-400">2025/2026</span>
-          </h1>
-          <p className="text-xl text-gray-400">Bellend Wrestling League Fantasy Picks</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {events.map((event) => (
-            <div 
-              key={event.id}
-              className="bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-800 hover:border-white transition-all duration-500 transform hover:scale-105 hover:shadow-white/20 flex flex-col"
-            >
-              <div className="relative h-48 bg-gradient-to-br from-gray-800 to-black overflow-hidden group">
-                {event.bannerImage ? (
-                  <img 
-                    src={event.bannerImage} 
-                    alt={event.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
-                    <h3 className="text-3xl font-bold text-white text-center p-2">{event.name}</h3>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
-                <div className="absolute top-4 right-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                    event.status === 'completed' ? 'border-green-500 text-green-500 bg-green-500/10' :
-                    event.status === 'live' ? 'border-red-500 text-red-500 bg-red-500/10 animate-pulse' :
-                    event.status === 'open' ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' :
-                    'border-gray-500 text-gray-500 bg-gray-500/10'
-                  }`}>
-                    {event.status.toUpperCase()}
-                  </span>
-                </div>
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <button onClick={() => setCurrentView('home')} className="flex items-center gap-2 group">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--gold-dark), var(--gold))' }}>
+                <Zap className="w-4 h-4 text-[--bg-deep]" />
               </div>
-              <div className="p-6 flex flex-col flex-grow">
-                <p className="text-gray-400 mb-4 text-sm">{event.date}</p>
-                <div className="space-y-3 mt-auto">
+              <span className="font-bebas text-2xl tracking-wider">
+                <span className="text-white">BWL</span>
+                <span className="text-[--gold] ml-1">FANTASY</span>
+              </span>
+            </button>
+
+            {/* Desktop nav */}
+            <div className="hidden md:flex items-center gap-1">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = currentView === item.key || (item.key === 'home' && ['home', 'event-standings', 'event-predictions', 'make-picks'].includes(currentView));
+                return (
                   <button
-                    onClick={() => {
-                      setSelectedEvent(event);
-                      setCurrentView('event-standings');
-                    }}
-                    className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 border border-gray-700 hover:border-gray-500"
+                    key={item.key}
+                    onClick={() => setCurrentView(item.key)}
+                    className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      isActive ? 'text-[--gold]' : 'text-[--text-secondary] hover:text-white hover:bg-white/5'
+                    }`}
                   >
-                    View Standings
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                    {isActive && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />
+                    )}
                   </button>
-                   {(event.status === 'live' || event.status === 'completed') && (
-                    <button
-                      onClick={() => {
-                        setSelectedEvent(event);
-                        setCurrentView('event-predictions');
-                      }}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 border border-blue-500 flex items-center justify-center space-x-2"
-                    >
-                      <Users className="w-4 h-4" />
-                      <span>View Predictions</span>
-                    </button>
+                );
+              })}
+            </div>
+
+            {/* Admin + mobile */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => isAdmin ? setCurrentView('admin') : setCurrentView('login')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isAdmin
+                    ? 'btn-gold'
+                    : 'border border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--gold-dark]'
+                }`}
+              >
+                {isAdmin ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">Admin</span>
+              </button>
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="md:hidden p-2 rounded-lg text-[--text-secondary] hover:text-white hover:bg-white/5 transition-all"
+              >
+                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {isMenuOpen && (
+          <div className="md:hidden border-t border-[--border] animate-fadeIn" style={{ background: 'var(--bg-surface)' }}>
+            <div className="px-4 py-3 space-y-1">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = currentView === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => { setCurrentView(item.key); setIsMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                      isActive ? 'text-[--gold] bg-[--gold]/5' : 'text-[--text-secondary] hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </nav>
+    );
+  };
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     HOME VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const HomeView = ({ events }) => (
+    <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Hero */}
+        <div className="text-center mb-16 animate-fadeInUp">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[--border-light] text-xs font-medium text-[--text-secondary] mb-6" style={{ background: 'var(--bg-elevated)' }}>
+            <Zap className="w-3 h-3 text-[--gold]" />
+            Season 2025/2026
+          </div>
+          <h1 className="font-bebas text-6xl sm:text-8xl lg:text-9xl tracking-tight leading-none mb-4">
+            <span className="text-white">BELLEND</span>
+            <br />
+            <span className="gold-shimmer">WRESTLING LEAGUE</span>
+          </h1>
+          <p className="font-outfit text-lg text-[--text-secondary] max-w-md mx-auto">
+            Fantasy Picks &mdash; Make your predictions and prove you know wrestling better than everyone else.
+          </p>
+          <div className="rope-divider max-w-xs mx-auto mt-8" />
+        </div>
+
+        {/* Events grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((event, idx) => {
+            const statusConfig = {
+              completed: { dot: 'status-dot-completed', label: 'Completed', color: 'text-emerald-400' },
+              live: { dot: 'status-dot-live', label: 'Live Now', color: 'text-red-400' },
+              open: { dot: 'status-dot-open', label: 'Open', color: 'text-amber-400' },
+              upcoming: { dot: 'status-dot-upcoming', label: 'Upcoming', color: 'text-slate-400' },
+            };
+            const sc = statusConfig[event.status] || statusConfig.upcoming;
+
+            return (
+              <div
+                key={event.id}
+                className="group rounded-xl overflow-hidden border border-[--border] gold-border-glow hover-lift card-gold-accent animate-fadeInUp flex flex-col"
+                style={{ background: 'var(--bg-surface)', animationDelay: `${idx * 80}ms` }}
+              >
+                {/* Image */}
+                <div className="relative h-48 overflow-hidden spotlight-overlay" style={{ background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-deep))' }}>
+                  {event.bannerImage ? (
+                    <img
+                      src={event.bannerImage} alt={event.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <h3 className="font-bebas text-4xl text-white/80 tracking-wider text-center px-4">{event.name}</h3>
+                    </div>
                   )}
-                  {event.status === 'open' && (
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[--bg-surface] via-transparent to-transparent opacity-80" />
+                  {/* Status badge */}
+                  <div className="absolute top-3 right-3">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider glass-card">
+                      <span className={`status-dot ${sc.dot}`} />
+                      <span className={sc.color}>{sc.label}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-grow">
+                  <h3 className="font-bebas text-2xl tracking-wide text-white mb-1">{event.name}</h3>
+                  <p className="text-sm text-[--text-muted] mb-5 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {event.date}
+                  </p>
+
+                  <div className="space-y-2 mt-auto">
                     <button
-                      onClick={() => {
-                        setSelectedEvent(event);
-                        setCurrentView('make-picks');
-                      }}
-                      className="w-full bg-white hover:bg-gray-200 text-black font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                      onClick={() => { setSelectedEvent(event); setCurrentView('event-standings'); }}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--gold-dark] transition-all duration-300"
+                      style={{ background: 'var(--bg-elevated)' }}
                     >
-                      Make Picks
+                      <Trophy className="w-4 h-4" />
+                      View Standings
                     </button>
-                  )}
+                    {(event.status === 'live' || event.status === 'completed') && (
+                      <button
+                        onClick={() => { setSelectedEvent(event); setCurrentView('event-predictions'); }}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 transition-all duration-300"
+                      >
+                        <Users className="w-4 h-4" />
+                        View Predictions
+                      </button>
+                    )}
+                    {event.status === 'open' && (
+                      <button
+                        onClick={() => { setSelectedEvent(event); setCurrentView('make-picks'); }}
+                        className="btn-gold w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2"
+                      >
+                        <Target className="w-4 h-4" />
+                        Make Picks
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {events.length === 0 && (
+          <div className="text-center py-20 animate-fadeIn">
+            <Calendar className="w-16 h-16 text-[--text-muted] mx-auto mb-4" />
+            <p className="text-[--text-secondary] text-lg">No events yet. Check back soon!</p>
+          </div>
+        )}
       </div>
     </div>
   );
 
-    const Modal = ({ isOpen, onClose, message, type = 'success', autoCloseSeconds = null }) => {
-        const [countdown, setCountdown] = useState(autoCloseSeconds);
-        
-        useEffect(() => {
-            if (!isOpen || !autoCloseSeconds) {
-                setCountdown(autoCloseSeconds);
-                return;
-            }
-            
-            setCountdown(autoCloseSeconds);
-            
-            const timer = setInterval(() => {
-                setCountdown(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        onClose();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            
-            return () => clearInterval(timer);
-        }, [isOpen, autoCloseSeconds, onClose]);
-        
-        if (!isOpen) return null;
 
-        const styles = {
-            success: {
-                borderColor: 'border-green-500',
-                icon: <Lock className="w-20 h-20 mx-auto mb-6 text-green-400 animate-pulse" />,
-                buttonColor: 'bg-green-500 hover:bg-green-600'
-            },
-            error: {
-                borderColor: 'border-red-500',
-                icon: <X className="w-20 h-20 mx-auto mb-6 text-red-400" />,
-                buttonColor: 'bg-red-500 hover:bg-red-600'
-            }
-        };
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     MODAL
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const Modal = ({ isOpen, onClose, message, type = 'success', autoCloseSeconds = null }) => {
+    const [countdown, setCountdown] = useState(autoCloseSeconds);
 
-        const currentStyle = styles[type];
+    useEffect(() => {
+      if (!isOpen || !autoCloseSeconds) { setCountdown(autoCloseSeconds); return; }
+      setCountdown(autoCloseSeconds);
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) { clearInterval(timer); onClose(); return 0; }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }, [isOpen, autoCloseSeconds, onClose]);
 
-        return (
-            <div 
-                className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 transition-opacity duration-300 animate-fadeIn"
-            >
-                <div 
-                    className={`bg-gray-900 rounded-2xl p-8 shadow-2xl border-2 ${currentStyle.borderColor} text-center transform transition-all duration-300 animate-fadeInUp max-w-sm w-full mx-4`}
-                    onClick={e => e.stopPropagation()}
-                >
-                    {currentStyle.icon}
-                    <p className="text-xl font-bold text-white mb-8">{message}</p>
-                    {autoCloseSeconds && countdown > 0 && (
-                        <p className="text-gray-400 text-sm mb-4">Redirecting in {countdown} seconds...</p>
-                    )}
-                    <button
-                        onClick={onClose}
-                        className={`w-full ${currentStyle.buttonColor} text-black font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105`}
-                    >
-                        {autoCloseSeconds ? 'Go to Home Now' : 'OK'}
-                    </button>
-                </div>
+    if (!isOpen) return null;
+
+    const isSuccess = type === 'success';
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 animate-fadeIn" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+        <div className={`relative rounded-2xl p-8 shadow-2xl text-center max-w-sm w-full mx-4 animate-scaleIn border ${isSuccess ? 'border-emerald-500/30' : 'border-red-500/30'}`} style={{ background: 'var(--bg-surface)' }} onClick={e => e.stopPropagation()}>
+          {/* Glow */}
+          <div className={`absolute -inset-px rounded-2xl opacity-20 blur-xl ${isSuccess ? 'bg-emerald-500' : 'bg-red-500'}`} />
+          <div className="relative">
+            <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${isSuccess ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+              {isSuccess
+                ? <Lock className="w-10 h-10 text-emerald-400" />
+                : <X className="w-10 h-10 text-red-400" />
+              }
             </div>
-        );
-    };
+            <p className="text-lg font-semibold text-white mb-6 leading-relaxed">{message}</p>
+            {autoCloseSeconds && countdown > 0 && (
+              <p className="text-[--text-muted] text-sm mb-4">Redirecting in {countdown}s...</p>
+            )}
+            <button
+              onClick={onClose}
+              className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${isSuccess ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+            >
+              {autoCloseSeconds ? 'Go Home Now' : 'OK'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     MAKE PICKS VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   const MakePicksView = () => {
     const player = players.find(p => p.name === currentUser) || { picks: {} };
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
-    
+
+    const totalMatches = selectedEvent.matches?.length || 0;
+    const pickedCount = Object.keys(player.picks || {}).filter(key => key.startsWith(`${selectedEvent.id}-`)).length;
+
     const handleLockInPicks = () => {
-        const playerPicksForEvent = Object.keys(player.picks || {}).filter(key => key.startsWith(`${selectedEvent.id}-`));
-
-        if (selectedEvent.matches && selectedEvent.matches.length > 0 && playerPicksForEvent.length < selectedEvent.matches.length) {
-            setShowErrorModal(true);
-        } else {
-            handlePicksSubmitted(selectedEvent.id, currentUser);
-            setShowSubmitModal(true);
-        }
+      const playerPicksForEvent = Object.keys(player.picks || {}).filter(key => key.startsWith(`${selectedEvent.id}-`));
+      if (selectedEvent.matches && selectedEvent.matches.length > 0 && playerPicksForEvent.length < selectedEvent.matches.length) {
+        setShowErrorModal(true);
+      } else {
+        handlePicksSubmitted(selectedEvent.id, currentUser);
+        setShowSubmitModal(true);
+      }
     };
 
     return (
-      <div className="min-h-screen bg-black p-8 relative">
-        <FloatingParticles />
-        <div className="max-w-4xl mx-auto relative z-10">
-          <button 
+      <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          {/* Back button */}
+          <button
             onClick={() => setCurrentView('home')}
-            className="mb-6 text-gray-400 hover:text-white flex items-center space-x-2 transition-all duration-300"
+            className="mb-8 text-[--text-muted] hover:text-white flex items-center gap-2 text-sm font-medium transition-all animate-fadeIn"
           >
-            <span>← Back to Events</span>
+            <ChevronRight className="w-4 h-4 rotate-180" />
+            Back to Events
           </button>
-          
-          <div className="bg-gray-900 rounded-xl p-8 shadow-2xl border border-gray-800">
-            { selectedEvent.status === 'open' &&
-                <div className="mb-8 p-4 bg-black rounded-lg border-2 border-dashed border-yellow-500">
-                    <label className="block text-yellow-400 text-sm font-bold mb-2 text-center" htmlFor="player-select">
-                        SELECT YOUR NAME TO MAKE PICKS
-                    </label>
-                    <select 
-                        id="player-select"
-                        value={currentUser || ''} 
-                        onChange={(e) => setCurrentUser(e.target.value)}
-                        className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-700 focus:outline-none focus:border-yellow-500 text-lg text-center appearance-none"
-                    >
-                        <option value="" disabled>-- Select Your Name --</option>
-                        {players.map(p => {
-                           const hasSubmitted = selectedEvent.submittedPlayers?.includes(p.name);
-                           return (
-                               <option 
-                                   key={p.id} 
-                                   value={p.name} 
-                                   disabled={hasSubmitted}
-                                   className={hasSubmitted ? 'text-gray-500' : ''}
-                                >
-                                   {p.name} {hasSubmitted ? '(Picks Submitted)' : ''}
-                               </option>
-                           );
-                        })}
-                    </select>
-                </div>
-            }
 
-            <h2 className="text-4xl font-bold text-white mb-2">{selectedEvent.name}</h2>
-            <p className="text-gray-400 mb-8">{selectedEvent.date}</p>
-            
-            {!selectedEvent.matches || selectedEvent.matches.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">Matches not yet announced</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Show exclusive picks notice for Royal Rumble */}
-                {isExclusivePicksEvent(selectedEvent) && selectedEvent.status === 'open' && (
-                  <div className="bg-purple-900/30 border border-purple-500 rounded-lg p-4 mb-4">
-                    <p className="text-purple-300 text-sm text-center">
-                      <span className="font-bold">🎯 Exclusive Picks Mode:</span> For the Men's and Women's Royal Rumble matches, each wrestler can only be picked once across all players.
-                    </p>
-                  </div>
-                )}
-                {selectedEvent.matches.map((match) => {
-                    const pickKey = `${selectedEvent.id}-${match.id}`;
-                    const playerPick = (player && player.picks) ? player.picks[pickKey] : undefined;
-                    const hasWinner = !!match.winner;
-                    
-                    // Get picks taken by other players (only relevant for specific Royal Rumble matches)
-                    const isExclusive = isExclusivePicksMatch(selectedEvent, match.title);
-                    const takenPicks = isExclusive ? getPicksTakenByOthers(selectedEvent.id, match.id, currentUser) : {};
-                  
-                    return (
-                        <div 
-                            key={match.id} 
-                            className={`bg-black rounded-lg p-6 border transition-all duration-300 ${isExclusive ? 'border-purple-800 hover:border-purple-600' : 'border-gray-800 hover:border-gray-600'}`}
-                        >
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-semibold text-white">{match.title}</h3>
-                                {isExclusive && (
-                                    <span className="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded border border-purple-700">
-                                        🎯 Exclusive
-                                    </span>
-                                )}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                            {match.options.map((option, idx) => {
-                                const isPicked = playerPick === option;
-                                const isWinner = match.winner === option;
-                                const takenByOther = takenPicks[option]; // Name of player who took this pick, or undefined
-                                const isBlocked = isExclusive && takenByOther && !isPicked;
-                                const isOtherOption = isExemptFromExclusive(option);
-                                
-                                // Get list of players who picked OTHER (for display purposes)
-                                const otherPickers = isExclusive && isOtherOption 
-                                    ? getOtherPickers(selectedEvent.id, match.id, currentUser) 
-                                    : [];
-
-                                let buttonClass = 'bg-gray-900 text-gray-300 hover:bg-gray-800 border-gray-700 hover:border-gray-500';
-                                if (hasWinner) {
-                                    if (isWinner) {
-                                        buttonClass = 'bg-green-500 text-black border-green-400 shadow-lg shadow-green-500/50';
-                                    } else if (isPicked && !isWinner) {
-                                        buttonClass = 'bg-red-500 text-white border-red-400 shadow-lg shadow-red-500/50';
-                                    }
-                                } else if (isPicked) {
-                                    buttonClass = 'bg-white text-black border-white shadow-lg';
-                                } else if (isBlocked) {
-                                    // Blocked by another player - show as unavailable
-                                    buttonClass = 'bg-gray-800 text-gray-500 border-gray-700 opacity-60 cursor-not-allowed';
-                                }
-                                
-                                const isDisabled = selectedEvent.status !== 'open' || isBlocked;
-                                
-                                return (
-                                <button
-                                    key={idx}
-                                    onClick={() => !isDisabled && submitPick(selectedEvent.id, match.id, option)}
-                                    disabled={isDisabled}
-                                    className={`p-4 rounded-lg font-semibold transition-all duration-300 border ${buttonClass} ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer transform hover:scale-105'}`}
-                                    title={isBlocked ? `Picked by ${takenByOther}` : ''}
-                                >
-                                    <div className="flex flex-col items-center">
-                                        <span>{option}</span>
-                                        {isWinner && <span className="text-sm mt-1">✓</span>}
-                                        {isBlocked && (
-                                            <span className="text-xs mt-1 text-purple-400">
-                                                🔒 {takenByOther}
-                                            </span>
-                                        )}
-                                        {/* Show who picked OTHER (not locked, just informational) */}
-                                        {isOtherOption && otherPickers.length > 0 && (
-                                            <span className="text-xs mt-1 text-gray-400">
-                                                {otherPickers.join(', ')}
-                                            </span>
-                                        )}
-                                    </div>
-                                </button>
-                                );
-                            })}
-                            </div>
-                        </div>
-                    );
-                })}
-              </div>
-            )}
-            {selectedEvent.status === 'open' && (
-                <button
-                    onClick={handleLockInPicks}
-                    className="w-full mt-8 bg-green-500 hover:bg-green-600 text-black font-bold py-4 rounded-lg transition-all duration-300 transform hover:scale-105 text-lg"
-                >
-                    Lock In Picks
-                </button>
-            )}
-          </div>
-        </div>
-        <Modal 
-            isOpen={showErrorModal} 
-            onClose={() => setShowErrorModal(false)} 
-            message="The Rock says this: There is no way. And The Rock means NO. WAY. That you forgot to make a pick for a match. Go back and check your picks, jabroni."
-            type="error"
-        />
-        <Modal 
-            isOpen={showSubmitModal} 
-            onClose={() => {
-                setShowSubmitModal(false);
-                setCurrentView('home');
-            }} 
-            message="Say your prayers and eat your vitamins. Your picks have been submitted, brother." 
-            type="success"
-            autoCloseSeconds={5}
-        />
-      </div>
-    );
-  };
-
-  const PlayerManagement = ({ isMinimized, onToggleMinimize }) => {
-    const [localPlayerName, setLocalPlayerName] = useState('');
-    
-    const handleAddPlayer = () => {
-      addPlayer(localPlayerName);
-      setLocalPlayerName('');
-    };
-    
-    return (
-      <div className="mt-8 bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800">
-        <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={onToggleMinimize}>
-            <h3 className="text-2xl font-bold text-white">Player Management</h3>
-            <button
-              className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300"
-            >
-              {isMinimized ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
-            </button>
-        </div>
-        
-        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMinimized ? 'max-h-0' : 'max-h-screen'}`}>
-            <div className="mb-6 bg-black p-4 rounded-lg border border-gray-800">
-              <h4 className="text-white font-semibold mb-3">Add New Player</h4>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Player name"
-                  value={localPlayerName}
-                  onChange={(e) => setLocalPlayerName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
-                  className="flex-1 px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:border-white focus:outline-none transition-all duration-300"
-                />
-                <button
-                  onClick={handleAddPlayer}
-                  className="px-6 py-2 bg-white hover:bg-gray-200 text-black font-semibold rounded-lg transition-all duration-300 transform hover:scale-105"
-                >
-                  Add Player
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {players.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">No players yet. Add your first player above!</p>
-              ) : (
-                players.map((player) => (
-                  <div 
-                    key={player.id} 
-                    className="flex items-center justify-between bg-black p-4 rounded-lg border border-gray-800 hover:border-gray-600 transition-all duration-300"
+          <div className="rounded-2xl border border-[--border] overflow-hidden animate-fadeInUp" style={{ background: 'var(--bg-surface)' }}>
+            {/* Header */}
+            <div className="p-6 sm:p-8 border-b border-[--border]" style={{ background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-surface))' }}>
+              {/* Player selector */}
+              {selectedEvent.status === 'open' && (
+                <div className="mb-6 p-4 rounded-xl border-2 border-dashed border-[--gold-dark]/40" style={{ background: 'rgba(201, 168, 76, 0.03)' }}>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[--gold] mb-2 text-center">
+                    Select Your Name
+                  </label>
+                  <select
+                    value={currentUser || ''}
+                    onChange={(e) => setCurrentUser(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl text-white text-center text-lg font-semibold border border-[--border] appearance-none cursor-pointer transition-all"
+                    style={{ background: 'var(--bg-input)' }}
                   >
-                    <span className="text-white font-semibold">{player.name}</span>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white font-bold">{calculateTotalPoints(player, sortedEvents)} pts</span>
-                        {player.bonusPoints !== undefined && player.bonusPoints !== 0 && (
-                          <span className="text-xs text-yellow-400">(+{player.bonusPoints} bonus)</span>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <button
-                          onClick={() => adjustBonusPoints(player.id, -1)}
-                          className="w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-all duration-300"
-                          title="Remove 1 point"
-                        >
-                          -
-                        </button>
-                        <button
-                          onClick={() => adjustBonusPoints(player.id, 1)}
-                          className="w-8 h-8 bg-green-600 hover:bg-green-700 text-white rounded font-bold transition-all duration-300"
-                          title="Add 1 point"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => deletePlayer(player.id)}
-                        className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-gray-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    <option value="" disabled>-- Select Your Name --</option>
+                    {players.map(p => {
+                      const hasSubmitted = selectedEvent.submittedPlayers?.includes(p.name);
+                      return (
+                        <option key={p.id} value={p.name} disabled={hasSubmitted}>
+                          {p.name} {hasSubmitted ? '(Submitted)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+
+              <h2 className="font-bebas text-4xl sm:text-5xl tracking-wide text-white">{selectedEvent.name}</h2>
+              <p className="text-[--text-muted] mt-1">{selectedEvent.date}</p>
+
+              {/* Progress bar */}
+              {totalMatches > 0 && selectedEvent.status === 'open' && (
+                <div className="mt-4">
+                  <div className="flex justify-between items-center text-xs mb-1.5">
+                    <span className="text-[--text-muted]">Picks progress</span>
+                    <span className={`font-bold ${pickedCount === totalMatches ? 'text-emerald-400' : 'text-[--gold]'}`}>
+                      {pickedCount}/{totalMatches}
+                    </span>
                   </div>
-                ))
+                  <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-deep)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500 gold-bar-shimmer"
+                      style={{ width: `${totalMatches > 0 ? (pickedCount / totalMatches) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
               )}
             </div>
-        </div>
-      </div>
-    );
-  };
 
-  const HallOfFameManagement = ({ 
-    entries, 
-    onAddEntry, 
-    onUpdateEntry, 
-    onDeleteEntry,
-    isMinimized,
-    onToggleMinimize,
-  }) => {
-    const [newEntry, setNewEntry] = useState({ title: '', description: '', imageFile: null, imageUrl: '' });
-    const [editingEntryId, setEditingEntryId] = useState(null);
-    const [localEditingData, setLocalEditingData] = useState(null);
-
-    useEffect(() => {
-        if (editingEntryId) {
-            const entry = entries.find(e => e.id === editingEntryId);
-            setLocalEditingData(entry ? { ...entry } : null);
-        } else {
-            setLocalEditingData(null);
-        }
-    }, [editingEntryId, entries]);
-
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const localUrl = URL.createObjectURL(file);
-            if (editingEntryId) {
-                setLocalEditingData(prev => ({ ...prev, imageFile: file, imageUrl: localUrl }));
-            } else {
-                setNewEntry(prev => ({ ...prev, imageFile: file, imageUrl: localUrl }));
-            }
-        }
-    };
-
-    const handleAddOrUpdate = () => {
-        if (editingEntryId) {
-            onUpdateEntry(editingEntryId, localEditingData);
-            setEditingEntryId(null);
-        } else {
-            if (newEntry.title && newEntry.imageFile) {
-                onAddEntry(newEntry);
-                setNewEntry({ title: '', description: '', imageFile: null, imageUrl: '' });
-            } else {
-                alert('Please provide a title and image for the Hall of Fame entry.');
-            }
-        }
-    };
-
-    return (
-      <div className="mt-8 bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800">
-        <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={onToggleMinimize}>
-          <h3 className="text-2xl font-bold text-white">Hall of Fame Management</h3>
-          <button className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300">
-            {isMinimized ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
-          </button>
-        </div>
-
-        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMinimized ? 'max-h-0' : 'max-h-screen'}`}>
-          <div className="mb-6 bg-black p-4 rounded-lg border border-gray-800">
-            <h4 className="text-white font-semibold mb-3">{editingEntryId ? 'Edit Hall of Famer' : 'Add New Hall of Famer'}</h4>
-            <input
-              type="text"
-              placeholder="Title (e.g., 2025 Mr. Predictamania | Johnny)"
-              value={editingEntryId ? (localEditingData?.title || '') : newEntry.title}
-              onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, title: e.target.value })) : setNewEntry(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:border-white focus:outline-none mb-3 transition-all duration-300"
-            />
-            <textarea
-                placeholder="Description (optional, e.g., 145 Points)"
-                value={editingEntryId ? (localEditingData?.description || '') : newEntry.description}
-                onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, description: e.target.value })) : setNewEntry(prev => ({ ...prev, description: e.target.value }))}
-                rows="3"
-                className="w-full px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:border-white focus:outline-none mb-3 resize-y transition-all duration-300"
-            ></textarea>
-            <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 hover:border-white transition-all duration-300 mb-4">
-              <label className="cursor-pointer block text-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-                <div className="text-gray-400 hover:text-white transition-colors">
-                  {(editingEntryId ? localEditingData?.imageUrl : newEntry.imageUrl) ? (
-                    <div>
-                      <img src={editingEntryId ? localEditingData.imageUrl : newEntry.imageUrl} alt="Preview" className="w-full h-32 object-cover rounded mb-2" />
-                      <p className="text-sm">Click to change image</p>
+            {/* Matches */}
+            <div className="p-6 sm:p-8">
+              {!selectedEvent.matches || selectedEvent.matches.length === 0 ? (
+                <div className="text-center py-16">
+                  <Calendar className="w-14 h-14 text-[--text-muted] mx-auto mb-4" />
+                  <p className="text-[--text-secondary] text-lg">Matches not yet announced</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Exclusive picks notice */}
+                  {isExclusivePicksEvent(selectedEvent) && selectedEvent.status === 'open' && (
+                    <div className="p-4 rounded-xl border border-indigo-500/20" style={{ background: 'rgba(99, 102, 241, 0.04)' }}>
+                      <p className="text-indigo-300 text-sm text-center flex items-center justify-center gap-2">
+                        <Target className="w-4 h-4" />
+                        <span><strong>Exclusive Picks:</strong> Each wrestler can only be picked once for Rumble matches.</span>
+                      </p>
                     </div>
-                  ) : (
-                    <p>Click to upload image</p>
                   )}
-                </div>
-              </label>
-            </div>
-            <div className="flex space-x-2">
-                <button
-                    onClick={handleAddOrUpdate}
-                    className="flex-1 px-6 py-2 bg-white hover:bg-gray-200 text-black font-semibold rounded-lg transition-all duration-300 transform hover:scale-105"
-                >
-                    {editingEntryId ? 'Save Changes' : 'Add Hall of Famer'}
-                </button>
-                {editingEntryId && (
-                    <button
-                        onClick={() => setEditingEntryId(null)}
-                        className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-300"
-                    >
-                        Cancel
-                    </button>
-                )}
-            </div>
-          </div>
 
-          <div className="space-y-3">
-            {entries.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">No Hall of Fame entries yet. Add one above!</p>
-            ) : (
-              entries.map((entry) => (
-                <div 
-                  key={entry.id} 
-                  className="flex items-center justify-between bg-black p-4 rounded-lg border border-gray-800 hover:border-gray-600 transition-all duration-300"
-                >
-                  <div className="flex items-center space-x-3">
-                    {entry.imageUrl && <img src={entry.imageUrl} alt={entry.title} className="w-12 h-12 object-cover rounded-full border border-gray-700" />}
-                    <div>
-                        <p className="text-white font-semibold">{entry.title}</p>
-                        {entry.description && <p className="text-gray-400 text-sm">{entry.description}</p>}
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setEditingEntryId(entry.id)}
-                      className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-gray-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onDeleteEntry(entry.id)}
-                      className="px-3 py-1 bg-red-700 hover:bg-red-800 text-white rounded text-sm transition-all duration-300 transform hover:scale-110 border border-red-600"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  {selectedEvent.matches.map((match, matchIdx) => {
+                    const pickKey = `${selectedEvent.id}-${match.id}`;
+                    const playerPick = player.picks?.[pickKey];
+                    const hasWinner = !!match.winner;
+                    const isExclusive = isExclusivePicksMatch(selectedEvent, match.title);
+                    const takenPicks = isExclusive ? getPicksTakenByOthers(selectedEvent.id, match.id, currentUser) : {};
+
+                    return (
+                      <div
+                        key={match.id}
+                        className={`rounded-xl border p-5 transition-all duration-300 animate-fadeInUp ${
+                          isExclusive ? 'border-indigo-500/20' : 'border-[--border]'
+                        }`}
+                        style={{ background: 'var(--bg-elevated)', animationDelay: `${matchIdx * 60}ms` }}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="font-bebas text-lg text-[--text-muted]">{matchIdx + 1}</span>
+                            <h3 className="font-outfit font-semibold text-white">{match.title}</h3>
+                          </div>
+                          {isExclusive && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-indigo-500/30 text-indigo-300" style={{ background: 'rgba(99, 102, 241, 0.08)' }}>
+                              Exclusive
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {match.options.map((option, idx) => {
+                            const isPicked = playerPick === option;
+                            const isWinner = match.winner === option;
+                            const takenByOther = takenPicks[option];
+                            const isBlocked = isExclusive && takenByOther && !isPicked;
+                            const isOtherOption = isExemptFromExclusive(option);
+                            const otherPickers = isExclusive && isOtherOption
+                              ? getOtherPickers(selectedEvent.id, match.id, currentUser)
+                              : [];
+
+                            let style = 'border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--gold-dark]/50';
+                            let bg = 'var(--bg-input)';
+                            if (hasWinner) {
+                              if (isWinner) { style = 'border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-500/10'; bg = 'rgba(16, 185, 129, 0.08)'; }
+                              else if (isPicked && !isWinner) { style = 'border-red-500 text-red-400 shadow-lg shadow-red-500/10'; bg = 'rgba(239, 35, 60, 0.08)'; }
+                            } else if (isPicked) {
+                              style = 'border-[--gold] text-[--gold] shadow-lg shadow-[--gold-glow]'; bg = 'rgba(201, 168, 76, 0.06)';
+                            } else if (isBlocked) {
+                              style = 'border-[--border] text-[--text-muted] opacity-50 cursor-not-allowed';
+                            }
+
+                            const isDisabled = selectedEvent.status !== 'open' || isBlocked;
+
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => !isDisabled && submitPick(selectedEvent.id, match.id, option)}
+                                disabled={isDisabled}
+                                className={`relative p-3.5 rounded-xl font-semibold text-sm border transition-all duration-300 ${style} ${!isDisabled ? 'hover:scale-[1.02] active:scale-[0.98]' : ''}`}
+                                style={{ background: bg }}
+                                title={isBlocked ? `Picked by ${takenByOther}` : ''}
+                              >
+                                <div className="flex flex-col items-center gap-1">
+                                  <span>{option}</span>
+                                  {isPicked && !hasWinner && (
+                                    <span className="text-[10px] uppercase tracking-wider font-bold text-[--gold]">Your Pick</span>
+                                  )}
+                                  {isWinner && <span className="text-xs">Winner</span>}
+                                  {isBlocked && (
+                                    <span className="text-[10px] text-indigo-400 flex items-center gap-0.5">
+                                      <Lock className="w-2.5 h-2.5" /> {takenByOther}
+                                    </span>
+                                  )}
+                                  {isOtherOption && otherPickers.length > 0 && (
+                                    <span className="text-[10px] text-[--text-muted]">{otherPickers.join(', ')}</span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))
-            )}
+              )}
+
+              {/* Lock In button */}
+              {selectedEvent.status === 'open' && (
+                <button
+                  onClick={handleLockInPicks}
+                  className="w-full mt-8 btn-gold py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-5 h-5" />
+                  Lock In Picks
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
+        <Modal
+          isOpen={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          message="The Rock says this: There is no way. And The Rock means NO. WAY. That you forgot to make a pick for a match. Go back and check your picks, jabroni."
+          type="error"
+        />
+        <Modal
+          isOpen={showSubmitModal}
+          onClose={() => { setShowSubmitModal(false); setCurrentView('home'); }}
+          message="Say your prayers and eat your vitamins. Your picks have been submitted, brother."
+          type="success"
+          autoCloseSeconds={5}
+        />
       </div>
     );
   };
 
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     EVENT STANDINGS VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   const EventStandingsView = () => {
     if (!selectedEvent) return null;
-
     const isHistorical = historicalEventNames.includes(selectedEvent.name.toUpperCase());
 
     const playerScores = useMemo(() => {
-        let scores;
-        if (isHistorical) {
-            const eventScores = historicalScores[selectedEvent.name.toUpperCase()];
-            scores = Object.keys(eventScores).map(playerName => ({
-                id: playerName,
-                name: playerName,
-                eventScore: eventScores[playerName]
-            }));
-        } else {
-            scores = players.map(player => {
-                let score = 0;
-                if(selectedEvent.matches){
-                    selectedEvent.matches.forEach(match => {
-                        const pickKey = `${selectedEvent.id}-${match.id}`;
-                        if (match.winner && player.picks && player.picks[pickKey] === match.winner) {
-                          score += 1;
-                        }
-                    });
-                }
-                return { ...player, eventScore: score };
+      let scores;
+      if (isHistorical) {
+        const eventScores = historicalScores[selectedEvent.name.toUpperCase()];
+        scores = Object.keys(eventScores).map(playerName => ({ id: playerName, name: playerName, eventScore: eventScores[playerName] }));
+      } else {
+        scores = players.map(player => {
+          let score = 0;
+          if (selectedEvent.matches) {
+            selectedEvent.matches.forEach(match => {
+              const pickKey = `${selectedEvent.id}-${match.id}`;
+              if (match.winner && player.picks && player.picks[pickKey] === match.winner) score += 1;
             });
-        }
-        return scores.sort((a, b) => b.eventScore - a.eventScore);
+          }
+          return { ...player, eventScore: score };
+        });
+      }
+      return scores.sort((a, b) => b.eventScore - a.eventScore);
     }, [selectedEvent, players]);
 
+    const maxScore = playerScores.length > 0 ? playerScores[0].eventScore : 1;
+
     return (
-      <div className="min-h-screen bg-black p-8 relative">
-        <FloatingParticles />
-        <div className="max-w-4xl mx-auto relative z-10">
-          <button
-            onClick={() => setCurrentView('home')}
-            className="mb-6 text-gray-400 hover:text-white flex items-center space-x-2 transition-all duration-300"
-          >
-            <span>← Back to Events</span>
+      <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setCurrentView('home')} className="mb-8 text-[--text-muted] hover:text-white flex items-center gap-2 text-sm font-medium transition-all animate-fadeIn">
+            <ChevronRight className="w-4 h-4 rotate-180" /> Back to Events
           </button>
-          <h2 className="text-5xl font-bold text-white mb-12 text-center animate-slideDown">
-            {selectedEvent.name} Standings
-          </h2>
-          <div className="space-y-3 animate-fadeIn">
-            {playerScores.map((player, idx) => (
-              <div
-                key={player.id}
-                className={`flex items-center justify-between p-6 rounded-xl transition-all duration-500 transform hover:scale-102 animate-fadeInUp border-2 ${
-                  idx === 0 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 shadow-2xl shadow-yellow-500/50' :
-                  idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500 border-gray-300 shadow-xl shadow-gray-400/30' :
-                  idx === 2 ? 'bg-gradient-to-r from-orange-600 to-orange-700 border-orange-500 shadow-xl shadow-orange-600/30' :
-                  'bg-gray-900 border-gray-700 hover:border-gray-500'
-                }`}
-                style={{ animationDelay: `${idx * 100}ms` }}
-              >
-                <div className="flex items-center space-x-6">
-                  <span className={`text-5xl font-black ${idx < 3 ? 'text-white' : 'text-gray-400'}`}>
+
+          <div className="text-center mb-10 animate-slideDown">
+            <h2 className="font-bebas text-5xl sm:text-6xl tracking-wide text-white mb-2">{selectedEvent.name}</h2>
+            <p className="text-[--text-secondary]">Event Standings</p>
+            <div className="rope-divider max-w-xs mx-auto mt-4" />
+          </div>
+
+          <div className="space-y-2.5">
+            {playerScores.map((player, idx) => {
+              const isTop3 = idx < 3;
+              const rankStyles = [
+                'podium-gold shadow-lg shadow-yellow-500/10',
+                'podium-silver shadow-lg shadow-gray-400/10',
+                'podium-bronze shadow-lg shadow-orange-500/10',
+              ];
+
+              return (
+                <div
+                  key={player.id}
+                  className={`flex items-center gap-4 p-4 sm:p-5 rounded-xl transition-all animate-fadeInUp ${
+                    isTop3 ? rankStyles[idx] : 'border border-[--border] gold-border-glow'
+                  }`}
+                  style={!isTop3 ? { background: 'var(--bg-surface)' } : undefined}
+                  {...{ style: { ...(!isTop3 ? { background: 'var(--bg-surface)' } : {}), animationDelay: `${idx * 60}ms` } }}
+                >
+                  {/* Rank */}
+                  <span className={`font-bebas text-3xl sm:text-4xl w-12 text-center flex-shrink-0 ${isTop3 ? 'text-white' : 'text-[--text-muted]'}`}>
                     {idx + 1}
                   </span>
-                  <span className="text-3xl font-bold text-white">
-                    {player.name}
-                  </span>
+
+                  {/* Name + bar */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-outfit font-bold text-lg sm:text-xl truncate ${isTop3 ? 'text-white' : 'text-white'}`}>
+                      {player.name}
+                    </p>
+                    <div className="w-full h-1 rounded-full mt-1.5 overflow-hidden" style={{ background: isTop3 ? 'rgba(255,255,255,0.15)' : 'var(--bg-elevated)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${maxScore > 0 ? (player.eventScore / maxScore) * 100 : 0}%`,
+                          background: idx === 0 ? '#d4af37' : idx === 1 ? '#a1a1aa' : idx === 2 ? '#b45309' : 'var(--gold-dark)',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Score */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {idx === 0 && <Crown className="w-5 h-5 text-yellow-400" />}
+                    <span className={`font-bebas text-3xl sm:text-4xl ${isTop3 ? 'text-white' : 'text-white'}`}>
+                      {player.eventScore}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-4xl font-black text-white">
-                  {player.eventScore}
-                </span>
-              </div>
-            ))}
-             {playerScores.length === 0 && (
-                <p className="text-gray-400 text-center py-8">No players have made picks for this event yet, or results are not in.</p>
+              );
+            })}
+            {playerScores.length === 0 && (
+              <p className="text-[--text-muted] text-center py-12">No standings data available yet.</p>
             )}
           </div>
         </div>
       </div>
     );
   };
-  
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     EVENT PREDICTIONS VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   const EventPredictionsView = ({ selectedEvent, players, onBack }) => {
     if (!selectedEvent || !selectedEvent.matches) return null;
 
     const predictions = selectedEvent.matches.map(match => {
-        const picksByOption = match.options.reduce((acc, option) => {
-            acc[option] = [];
-            return acc;
-        }, {});
-
-        players.forEach(player => {
-            const pickKey = `${selectedEvent.id}-${match.id}`;
-            const playerPick = player.picks ? player.picks[pickKey] : undefined;
-            if (playerPick && picksByOption.hasOwnProperty(playerPick)) {
-                picksByOption[playerPick].push(player.name);
-            }
-        });
-
-        return {
-            matchTitle: match.title,
-            picks: picksByOption,
-            winner: match.winner
-        };
+      const picksByOption = match.options.reduce((acc, option) => { acc[option] = []; return acc; }, {});
+      players.forEach(player => {
+        const pickKey = `${selectedEvent.id}-${match.id}`;
+        const playerPick = player.picks?.[pickKey];
+        if (playerPick && picksByOption.hasOwnProperty(playerPick)) picksByOption[playerPick].push(player.name);
+      });
+      return { matchTitle: match.title, picks: picksByOption, winner: match.winner };
     });
 
     return (
-        <div className="min-h-screen bg-black p-8 relative">
-            <FloatingParticles />
-            <div className="max-w-4xl mx-auto relative z-10">
-                <button
-                    onClick={onBack}
-                    className="mb-6 text-gray-400 hover:text-white flex items-center space-x-2 transition-all duration-300"
-                >
-                    <span>← Back to Events</span>
-                </button>
-                <h2 className="text-5xl font-bold text-white mb-4 text-center">
-                    {selectedEvent.name}
-                </h2>
-                <p className="text-gray-400 mb-12 text-center">Player Predictions</p>
+      <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={onBack} className="mb-8 text-[--text-muted] hover:text-white flex items-center gap-2 text-sm font-medium transition-all animate-fadeIn">
+            <ChevronRight className="w-4 h-4 rotate-180" /> Back to Events
+          </button>
 
-                <div className="space-y-8">
-                    {predictions.map((prediction, idx) => (
-                        <div key={idx} className="bg-gray-900 rounded-xl p-6 shadow-xl border border-gray-800">
-                            <h3 className="text-2xl font-bold text-white mb-4">{prediction.matchTitle}</h3>
-                            <div className="space-y-3">
-                                {Object.entries(prediction.picks).map(([option, playerNames]) => (
-                                    <div key={option} className={`p-4 rounded-lg border transition-all duration-300 ${prediction.winner === option ? 'bg-green-900/50 border-green-500' : 'bg-black border-gray-800'}`}>
-                                        <p className={`font-semibold ${prediction.winner === option ? 'text-green-400' : 'text-white'}`}>{option}</p>
-                                        {playerNames.length > 0 ? (
-                                            <p className="text-gray-400 mt-1 text-sm">
-                                                Picked by: {playerNames.join(', ')}
-                                            </p>
-                                        ) : (
-                                            <p className="text-gray-600 mt-1 text-sm">
-                                                No players picked this option.
-                                            </p>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+          <div className="text-center mb-10 animate-slideDown">
+            <h2 className="font-bebas text-5xl sm:text-6xl tracking-wide text-white mb-2">{selectedEvent.name}</h2>
+            <p className="text-[--text-secondary]">Player Predictions</p>
+            <div className="rope-divider max-w-xs mx-auto mt-4" />
+          </div>
+
+          <div className="space-y-6">
+            {predictions.map((prediction, idx) => (
+              <div key={idx} className="rounded-xl border border-[--border] card-gold-accent overflow-hidden animate-fadeInUp" style={{ background: 'var(--bg-surface)', animationDelay: `${idx * 80}ms` }}>
+                <div className="px-5 py-4 border-b border-[--border]" style={{ background: 'var(--bg-elevated)' }}>
+                  <h3 className="font-bebas text-xl tracking-wide text-white">{prediction.matchTitle}</h3>
+                </div>
+                <div className="p-5 space-y-2">
+                  {Object.entries(prediction.picks).map(([option, playerNames]) => {
+                    const isWinner = prediction.winner === option;
+                    return (
+                      <div
+                        key={option}
+                        className={`p-3.5 rounded-lg border transition-all ${
+                          isWinner ? 'border-emerald-500/40' : 'border-[--border]'
+                        }`}
+                        style={{ background: isWinner ? 'rgba(16, 185, 129, 0.06)' : 'var(--bg-elevated)' }}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className={`font-semibold text-sm ${isWinner ? 'text-emerald-400' : 'text-white'}`}>
+                            {isWinner && <Trophy className="w-3.5 h-3.5 inline mr-1.5" />}
+                            {option}
+                          </p>
+                          <span className="text-xs text-[--text-muted] font-medium">{playerNames.length} pick{playerNames.length !== 1 ? 's' : ''}</span>
                         </div>
-                    ))}
-                    {predictions.length === 0 && (
-                         <p className="text-gray-400 text-center py-8">No matches available for this event yet.</p>
-                    )}
+                        <p className="text-xs text-[--text-muted]">
+                          {playerNames.length > 0 ? playerNames.join(', ') : 'No players picked this.'}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
-            </div>
-        </div>
-    );
-};
-
-
-  const StandingsView = () => {
-    const allPlayerNames = useMemo(() => {
-        const firestorePlayers = players.map(p => p.name);
-        const historicalPlayers = Object.values(historicalScores).flatMap(scores => Object.keys(scores));
-        return [...new Set([...firestorePlayers, ...historicalPlayers])];
-    }, [players]);
-
-
-    const sortedPlayers = allPlayerNames
-      .map(name => {
-        const playerObject = players.find(p => p.name === name) || { name: name, id: name };
-        return {
-            ...playerObject,
-            totalPoints: calculateTotalPoints(playerObject, sortedEvents)
-        }
-      })
-      .sort((a, b) => b.totalPoints - a.totalPoints);
-    
-    return (
-      <div className="min-h-screen bg-black p-8 relative">
-        <FloatingParticles />
-        <div className="max-w-4xl mx-auto relative z-10">
-          <h2 className="text-5xl font-bold text-white mb-12 text-center animate-slideDown">
-            Global Standings
-          </h2>
-          
-          <div className="space-y-3 animate-fadeIn">
-            {sortedPlayers.map((player, idx) => (
-              <div 
-                key={player.id} 
-                className={`flex items-center justify-between p-6 rounded-xl transition-all duration-500 transform hover:scale-102 animate-fadeInUp border-2 ${
-                  idx === 0 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 shadow-2xl shadow-yellow-500/50' :
-                  idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500 border-gray-300 shadow-xl shadow-gray-400/30' :
-                  idx === 2 ? 'bg-gradient-to-r from-orange-600 to-orange-700 border-orange-500 shadow-xl shadow-orange-600/30' :
-                  'bg-gray-900 border-gray-700 hover:border-gray-500'
-                }`}
-                style={{ animationDelay: `${idx * 100}ms` }}
-              >
-                <div className="flex items-center space-x-6">
-                  <span className={`text-5xl font-black ${
-                    idx < 3 ? 'text-white' : 'text-gray-400'
-                  }`}>
-                    {idx + 1}
-                  </span>
-                  <span className={`text-3xl font-bold ${
-                    idx < 3 ? 'text-white' : 'text-white'
-                  }`}>
-                    {player.name}
-                  </span>
-                </div>
-                <span className={`text-4xl font-black ${
-                  idx < 3 ? 'text-white' : 'text-white'
-                }`}>
-                  {player.totalPoints}
-                </span>
               </div>
             ))}
+            {predictions.length === 0 && <p className="text-[--text-muted] text-center py-12">No matches available for this event.</p>}
           </div>
         </div>
       </div>
     );
   };
 
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     GLOBAL STANDINGS VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const StandingsView = () => {
+    const allPlayerNames = useMemo(() => {
+      const firestorePlayers = players.map(p => p.name);
+      const historicalPlayers = Object.values(historicalScores).flatMap(scores => Object.keys(scores));
+      return [...new Set([...firestorePlayers, ...historicalPlayers])];
+    }, [players]);
+
+    const sortedPlayers = allPlayerNames
+      .map(name => {
+        const playerObject = players.find(p => p.name === name) || { name, id: name };
+        return { ...playerObject, totalPoints: calculateTotalPoints(playerObject, sortedEvents) };
+      })
+      .sort((a, b) => b.totalPoints - a.totalPoints);
+
+    const maxPoints = sortedPlayers.length > 0 ? sortedPlayers[0].totalPoints : 1;
+
+    return (
+      <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12 animate-slideDown">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[--border-light] text-xs font-medium text-[--text-secondary] mb-6" style={{ background: 'var(--bg-elevated)' }}>
+              <TrendingUp className="w-3 h-3 text-[--gold]" />
+              All-Time Rankings
+            </div>
+            <h2 className="font-bebas text-6xl sm:text-7xl tracking-wide text-white mb-2">
+              GLOBAL <span className="gold-shimmer">STANDINGS</span>
+            </h2>
+            <p className="text-[--text-secondary]">Combined scores across all events</p>
+            <div className="rope-divider max-w-xs mx-auto mt-6" />
+          </div>
+
+          <div className="space-y-2.5">
+            {sortedPlayers.map((player, idx) => {
+              const isTop3 = idx < 3;
+              const rankStyles = [
+                'podium-gold shadow-lg shadow-yellow-500/10',
+                'podium-silver shadow-lg shadow-gray-400/10',
+                'podium-bronze shadow-lg shadow-orange-500/10',
+              ];
+
+              return (
+                <div
+                  key={player.id}
+                  className={`flex items-center gap-4 p-4 sm:p-5 rounded-xl transition-all animate-fadeInUp ${
+                    isTop3 ? rankStyles[idx] : 'border border-[--border] gold-border-glow'
+                  }`}
+                  style={{ ...(!isTop3 ? { background: 'var(--bg-surface)' } : {}), animationDelay: `${idx * 60}ms` }}
+                >
+                  <span className={`font-bebas text-3xl sm:text-4xl w-12 text-center flex-shrink-0 ${isTop3 ? 'text-white' : 'text-[--text-muted]'}`}>
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-outfit font-bold text-lg sm:text-xl text-white truncate">{player.name}</p>
+                    <div className="w-full h-1 rounded-full mt-1.5 overflow-hidden" style={{ background: isTop3 ? 'rgba(255,255,255,0.15)' : 'var(--bg-elevated)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${maxPoints > 0 ? (player.totalPoints / maxPoints) * 100 : 0}%`,
+                          background: idx === 0 ? '#d4af37' : idx === 1 ? '#a1a1aa' : idx === 2 ? '#b45309' : 'var(--gold-dark)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {idx === 0 && <Crown className="w-5 h-5 text-yellow-400" />}
+                    <span className="font-bebas text-3xl sm:text-4xl text-white">{player.totalPoints}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     HALL OF FAME VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const HallOfFameView = () => {
+    const latestWinner = hallOfFameEntries.length > 0 ? hallOfFameEntries[hallOfFameEntries.length - 1] : null;
+    const previousWinners = hallOfFameEntries.length > 1 ? hallOfFameEntries.slice(0, hallOfFameEntries.length - 1).reverse() : [];
+
+    return (
+      <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 animate-slideDown">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[--gold-dark]/30 text-xs font-medium text-[--gold] mb-6" style={{ background: 'rgba(201, 168, 76, 0.04)' }}>
+              <Award className="w-3 h-3" />
+              Legends of BWL
+            </div>
+            <h2 className="font-bebas text-6xl sm:text-7xl tracking-wide leading-none mb-2">
+              <span className="text-white">HALL OF </span>
+              <span className="gold-shimmer">FAME</span>
+            </h2>
+            <div className="rope-divider max-w-xs mx-auto mt-6" />
+          </div>
+
+          {hallOfFameEntries.length === 0 ? (
+            <div className="text-center py-20 animate-fadeIn">
+              <Award className="w-16 h-16 text-[--text-muted] mx-auto mb-4" />
+              <p className="text-[--text-secondary] text-lg">The Hall of Fame is empty. A new legend awaits their coronation.</p>
+            </div>
+          ) : (
+            <>
+              {/* Latest inductee spotlight */}
+              {latestWinner && (
+                <div className="relative mb-16 rounded-2xl overflow-hidden border border-[--gold-dark]/30 animate-fadeInUp" style={{ background: 'var(--bg-surface)' }}>
+                  {/* Spotlight sweep */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div
+                      className="absolute top-0 left-0 w-1/3 h-full opacity-10"
+                      style={{ background: 'linear-gradient(90deg, transparent, var(--gold-light), transparent)', animation: 'spotlight 4s linear infinite' }}
+                    />
+                  </div>
+                  {/* Gold top border */}
+                  <div className="h-1 gold-bar-shimmer" />
+
+                  <div className="p-8 sm:p-12">
+                    <div className="text-center mb-8">
+                      <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[--gold]">
+                        <Star className="w-3 h-3" /> Latest Inductee <Star className="w-3 h-3" />
+                      </span>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                      <div className="md:w-1/2 relative">
+                        {latestWinner.imageUrl && (
+                          <div className="relative rounded-xl overflow-hidden border-2 border-[--gold-dark]/40 shadow-2xl shadow-black/50">
+                            <img src={latestWinner.imageUrl} alt={latestWinner.title} className="w-full h-auto object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="md:w-1/2 text-center md:text-left">
+                        <h3 className="font-bebas text-5xl sm:text-6xl text-white tracking-wide mb-3">{latestWinner.title}</h3>
+                        {latestWinner.description && (
+                          <p className="text-xl text-[--gold] font-semibold">{latestWinner.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Previous champions */}
+              {previousWinners.length > 0 && (
+                <>
+                  <div className="text-center mb-8">
+                    <h3 className="font-bebas text-3xl tracking-wide text-white">Previous Champions</h3>
+                    <div className="rope-divider max-w-xs mx-auto mt-3" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {previousWinners.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="group rounded-xl overflow-hidden border border-[--border] gold-border-glow hover-lift animate-fadeInUp flex flex-col"
+                        style={{ background: 'var(--bg-surface)', animationDelay: `${index * 100}ms` }}
+                      >
+                        <div className="relative h-64 overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+                          {entry.imageUrl ? (
+                            <img src={entry.imageUrl} alt={entry.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Trophy className="w-16 h-16 text-[--text-muted]" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-[--bg-surface] via-transparent to-transparent" />
+                          <div className="absolute bottom-3 left-3">
+                            <Award className="w-8 h-8 text-[--gold]" style={{ animation: 'float 3s ease-in-out infinite' }} />
+                          </div>
+                        </div>
+                        <div className="p-5 text-center">
+                          <h4 className="font-bebas text-2xl text-white tracking-wide">{entry.title}</h4>
+                          {entry.description && <p className="text-[--gold] text-sm mt-1">{entry.description}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ADMIN LOGIN VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   const AdminLoginView = () => {
     const [localPassword, setLocalPassword] = useState('');
-    
+    const [showPassword, setShowPassword] = useState(false);
+
     const handleLogin = () => {
       if (localPassword === 'ssj') {
-        setIsAdmin(true);
-        setCurrentView('admin');
-        setAdminPassword('');
-        setLocalPassword('');
-      } else {
-        alert('Incorrect password');
-      }
+        setIsAdmin(true); setCurrentView('admin');
+        setAdminPassword(''); setLocalPassword('');
+      } else alert('Incorrect password');
     };
-    
+
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-8 relative">
-        <FloatingParticles />
-        <div className="bg-gray-900 rounded-xl p-8 shadow-2xl max-w-md w-full border border-gray-800 relative z-10 animate-fadeIn">
-          <h2 className="text-3xl font-bold text-white mb-6 text-center">Admin Login</h2>
-          <input
-            type="password"
-            placeholder="Enter admin password"
-            value={localPassword}
-            onChange={(e) => setLocalPassword(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-            className="w-full px-4 py-3 rounded-lg bg-black text-white border border-gray-700 focus:border-white focus:outline-none mb-4 transition-all duration-300"
-          />
+      <div className="min-h-screen arena-bg flex items-center justify-center px-4">
+        <div className="rounded-2xl border border-[--border] p-8 max-w-sm w-full animate-scaleIn" style={{ background: 'var(--bg-surface)' }}>
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-input))' }}>
+              <Shield className="w-8 h-8 text-[--gold]" />
+            </div>
+            <h2 className="font-bebas text-3xl tracking-wide text-white">Admin Access</h2>
+            <p className="text-sm text-[--text-muted] mt-1">Enter your password to continue</p>
+          </div>
+          <div className="relative mb-4">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              value={localPassword}
+              onChange={(e) => setLocalPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+              className="w-full px-4 py-3 rounded-xl text-white border border-[--border] pr-10 transition-all"
+              style={{ background: 'var(--bg-input)' }}
+            />
+            <button
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[--text-muted] hover:text-white transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           <button
             onClick={handleLogin}
-            className="w-full bg-white hover:bg-gray-200 text-black font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+            className="btn-gold w-full py-3 rounded-xl font-bold text-sm"
           >
             Login
           </button>
@@ -1774,153 +1534,300 @@ const FantasyWrestlingApp = () => {
     );
   };
 
-  const AdminView = ({ events }) => (
-    <div className="min-h-screen bg-black p-8 relative">
-      <FloatingParticles />
-      <div className="max-w-6xl mx-auto relative z-10">
-        <div className="flex justify-between items-center mb-8 animate-slideDown">
-          <h2 className="text-4xl font-bold text-white">Admin Panel</h2>
-          <button
-            onClick={createNewEvent}
-            className="bg-white hover:bg-gray-200 text-black font-semibold px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            <span>New Event</span>
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ADMIN: Player Management
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const PlayerManagement = ({ isMinimized, onToggleMinimize }) => {
+    const [localPlayerName, setLocalPlayerName] = useState('');
+
+    const handleAddPlayer = () => { addPlayer(localPlayerName); setLocalPlayerName(''); };
+
+    return (
+      <div className="mt-6 rounded-xl border border-[--border] card-gold-accent" style={{ background: 'var(--bg-surface)' }}>
+        <div
+          className="flex items-center justify-between px-5 py-4 cursor-pointer border-b border-[--border] hover:bg-white/[0.02] transition-all"
+          onClick={onToggleMinimize}
+        >
+          <div className="flex items-center gap-3">
+            <Users className="w-4 h-4 text-[--gold]" />
+            <h3 className="font-bebas text-xl tracking-wide text-white">Player Management</h3>
+            <span className="text-xs text-[--text-muted] font-medium">{players.length} players</span>
+          </div>
+          <button className="p-1.5 rounded-md text-[--text-muted]">
+            {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className={`collapse-section ${isMinimized ? 'max-h-0 opacity-0' : 'max-h-[5000px] opacity-100'}`}>
+          <div className="p-5">
+            {/* Add player */}
+            <div className="flex gap-2 mb-5">
+              <input
+                type="text" placeholder="Player name" value={localPlayerName}
+                onChange={(e) => setLocalPlayerName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all"
+                style={{ background: 'var(--bg-input)' }}
+              />
+              <button onClick={handleAddPlayer} className="btn-gold px-5 py-2.5 rounded-lg text-sm font-bold">
+                Add
+              </button>
+            </div>
+
+            {/* Player list */}
+            <div className="space-y-2">
+              {players.length === 0 ? (
+                <p className="text-[--text-muted] text-center py-8 text-sm">No players yet.</p>
+              ) : (
+                players.map((player) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between p-3.5 rounded-lg border border-[--border] hover:border-[--border-light] transition-all"
+                    style={{ background: 'var(--bg-elevated)' }}
+                  >
+                    <span className="text-white font-medium text-sm">{player.name}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-white font-bold text-sm">{calculateTotalPoints(player, sortedEvents)} pts</span>
+                        {player.bonusPoints !== undefined && player.bonusPoints !== 0 && (
+                          <span className="text-[10px] text-[--gold] font-medium">+{player.bonusPoints}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => adjustBonusPoints(player.id, -1)}
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all"
+                        >-</button>
+                        <button
+                          onClick={() => adjustBonusPoints(player.id, 1)}
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                        >+</button>
+                      </div>
+                      <button
+                        onClick={() => deletePlayer(player.id)}
+                        className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-[--border-light] text-[--text-muted] hover:text-red-400 hover:border-red-500/30 transition-all"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ADMIN: Hall of Fame Management
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const HallOfFameManagement = ({ entries, onAddEntry, onUpdateEntry, onDeleteEntry, isMinimized, onToggleMinimize }) => {
+    const [newEntry, setNewEntry] = useState({ title: '', description: '', imageFile: null, imageUrl: '' });
+    const [editingEntryId, setEditingEntryId] = useState(null);
+    const [localEditingData, setLocalEditingData] = useState(null);
+
+    useEffect(() => {
+      if (editingEntryId) {
+        const entry = entries.find(e => e.id === editingEntryId);
+        setLocalEditingData(entry ? { ...entry } : null);
+      } else setLocalEditingData(null);
+    }, [editingEntryId, entries]);
+
+    const handleImageUpload = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const localUrl = URL.createObjectURL(file);
+        if (editingEntryId) setLocalEditingData(prev => ({ ...prev, imageFile: file, imageUrl: localUrl }));
+        else setNewEntry(prev => ({ ...prev, imageFile: file, imageUrl: localUrl }));
+      }
+    };
+
+    const handleAddOrUpdate = () => {
+      if (editingEntryId) { onUpdateEntry(editingEntryId, localEditingData); setEditingEntryId(null); }
+      else {
+        if (newEntry.title && newEntry.imageFile) { onAddEntry(newEntry); setNewEntry({ title: '', description: '', imageFile: null, imageUrl: '' }); }
+        else alert('Please provide a title and image.');
+      }
+    };
+
+    return (
+      <div className="mt-6 rounded-xl border border-[--border] card-gold-accent" style={{ background: 'var(--bg-surface)' }}>
+        <div
+          className="flex items-center justify-between px-5 py-4 cursor-pointer border-b border-[--border] hover:bg-white/[0.02] transition-all"
+          onClick={onToggleMinimize}
+        >
+          <div className="flex items-center gap-3">
+            <Award className="w-4 h-4 text-[--gold]" />
+            <h3 className="font-bebas text-xl tracking-wide text-white">Hall of Fame</h3>
+            <span className="text-xs text-[--text-muted] font-medium">{entries.length} entries</span>
+          </div>
+          <button className="p-1.5 rounded-md text-[--text-muted]">
+            {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+        </div>
+
+        <div className={`collapse-section ${isMinimized ? 'max-h-0 opacity-0' : 'max-h-[5000px] opacity-100'}`}>
+          <div className="p-5">
+            {/* Add/Edit form */}
+            <div className="p-4 rounded-lg border border-[--border] mb-5" style={{ background: 'var(--bg-elevated)' }}>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-[--text-muted] mb-3">
+                {editingEntryId ? 'Edit Entry' : 'Add New Entry'}
+              </h4>
+              <input
+                type="text"
+                placeholder="Title (e.g., 2025 Mr. Predictamania | Johnny)"
+                value={editingEntryId ? (localEditingData?.title || '') : newEntry.title}
+                onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, title: e.target.value })) : setNewEntry(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] mb-2 transition-all"
+                style={{ background: 'var(--bg-input)' }}
+              />
+              <textarea
+                placeholder="Description (optional)"
+                value={editingEntryId ? (localEditingData?.description || '') : newEntry.description}
+                onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, description: e.target.value })) : setNewEntry(prev => ({ ...prev, description: e.target.value }))}
+                rows="2"
+                className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] mb-2 resize-y transition-all"
+                style={{ background: 'var(--bg-input)' }}
+              />
+              <label className="block border-2 border-dashed border-[--border-light] rounded-lg p-4 text-center cursor-pointer hover:border-[--gold-dark] transition-all mb-3">
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                {(editingEntryId ? localEditingData?.imageUrl : newEntry.imageUrl) ? (
+                  <div>
+                    <img src={editingEntryId ? localEditingData.imageUrl : newEntry.imageUrl} alt="Preview" className="w-full h-28 object-cover rounded-md mb-2" />
+                    <p className="text-xs text-[--text-muted]">Click to change image</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[--text-muted]">Click to upload image</p>
+                )}
+              </label>
+              <div className="flex gap-2">
+                <button onClick={handleAddOrUpdate} className="flex-1 btn-gold py-2.5 rounded-lg text-sm font-bold">
+                  {editingEntryId ? 'Save Changes' : 'Add Entry'}
+                </button>
+                {editingEntryId && (
+                  <button
+                    onClick={() => setEditingEntryId(null)}
+                    className="px-5 py-2.5 rounded-lg text-sm font-medium border border-[--border-light] text-[--text-secondary] hover:text-white transition-all"
+                    style={{ background: 'var(--bg-input)' }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Entries list */}
+            <div className="space-y-2">
+              {entries.length === 0 ? (
+                <p className="text-[--text-muted] text-center py-8 text-sm">No entries yet.</p>
+              ) : (
+                entries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between p-3.5 rounded-lg border border-[--border] hover:border-[--border-light] transition-all"
+                    style={{ background: 'var(--bg-elevated)' }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {entry.imageUrl && <img src={entry.imageUrl} alt={entry.title} className="w-10 h-10 object-cover rounded-lg border border-[--border] flex-shrink-0" />}
+                      <div className="min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{entry.title}</p>
+                        {entry.description && <p className="text-[--text-muted] text-xs truncate">{entry.description}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0 ml-3">
+                      <button
+                        onClick={() => setEditingEntryId(entry.id)}
+                        className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-[--border-light] text-[--text-secondary] hover:text-white transition-all"
+                      >Edit</button>
+                      <button
+                        onClick={() => onDeleteEntry(entry.id)}
+                        className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-red-500/20 text-red-400/60 hover:text-red-400 hover:border-red-500/40 transition-all"
+                      >Remove</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ADMIN VIEW
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  const AdminView = ({ events }) => (
+    <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 animate-slideDown">
+          <div>
+            <h2 className="font-bebas text-4xl tracking-wide text-white flex items-center gap-3">
+              <Shield className="w-7 h-7 text-[--gold]" />
+              Admin Panel
+            </h2>
+            <p className="text-sm text-[--text-muted] mt-1">Manage events, players, and hall of fame</p>
+          </div>
+          <button
+            onClick={createNewEvent}
+            className="btn-gold px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 self-start"
+          >
+            <Plus className="w-4 h-4" />
+            New Event
+          </button>
+        </div>
+
+        {/* Events list */}
+        <div className="space-y-4">
           {events.map((event, index) => (
-             <EventEditorCard
-                key={event.id}
-                event={event}
-                isEditing={editingEvent === event.id}
-                onSetEditing={setEditingEvent}
-                onSave={async (id, data) => {
-                  await updateEvent(id, data);
-                  setEditingEvent(null);
-                }}
-                onDelete={deleteEvent}
-                onUpdateEvent={updateEvent}
-                onAddMatch={addMatch}
-                onAddOptionToMatch={addOptionToMatch}
-                onResetPlayerPick={resetPlayerPick}
-                onResetAllPlayerPicks={resetAllPlayerPicks}
-                players={players}
-                animationDelay={`${index * 100}ms`}
-                isMinimized={minimizedEvents.includes(event.id)}
-                onToggleMinimize={toggleMinimizeEvent}
+            <EventEditorCard
+              key={event.id}
+              event={event}
+              isEditing={editingEvent === event.id}
+              onSetEditing={setEditingEvent}
+              onSave={async (id, data) => { await updateEvent(id, data); setEditingEvent(null); }}
+              onDelete={deleteEvent}
+              onUpdateEvent={updateEvent}
+              onAddMatch={addMatch}
+              onAddOptionToMatch={addOptionToMatch}
+              onResetPlayerPick={resetPlayerPick}
+              onResetAllPlayerPicks={resetAllPlayerPicks}
+              players={players}
+              animationDelay={`${index * 80}ms`}
+              isMinimized={minimizedEvents.includes(event.id)}
+              onToggleMinimize={toggleMinimizeEvent}
             />
           ))}
         </div>
 
-        <PlayerManagement 
-            isMinimized={isPlayerManagementMinimized}
-            onToggleMinimize={() => setIsPlayerManagementMinimized(p => !p)}
+        <PlayerManagement
+          isMinimized={isPlayerManagementMinimized}
+          onToggleMinimize={() => setIsPlayerManagementMinimized(p => !p)}
         />
         <HallOfFameManagement
-            entries={hallOfFameEntries}
-            onAddEntry={addHallOfFameEntry}
-            onUpdateEntry={updateHallOfFameEntry}
-            onDeleteEntry={deleteHallOfFameEntry}
-            isMinimized={isHallOfFameMinimized}
-            onToggleMinimize={() => setIsHallOfFameMinimized(p => !p)}
+          entries={hallOfFameEntries}
+          onAddEntry={addHallOfFameEntry}
+          onUpdateEntry={updateHallOfFameEntry}
+          onDeleteEntry={deleteHallOfFameEntry}
+          isMinimized={isHallOfFameMinimized}
+          onToggleMinimize={() => setIsHallOfFameMinimized(p => !p)}
         />
       </div>
     </div>
   );
 
-  const HallOfFameView = () => {
-    const latestWinner = hallOfFameEntries.length > 0 ? hallOfFameEntries[hallOfFameEntries.length - 1] : null;
-    const previousWinners = hallOfFameEntries.length > 1 ? hallOfFameEntries.slice(0, hallOfFameEntries.length - 1).reverse() : [];
 
-    return (
-    <div className="min-h-screen bg-black p-8 relative">
-      <FloatingParticles />
-      <div className="max-w-7xl mx-auto relative z-10">
-        <h2 className="text-5xl font-bold text-white mb-8 flex items-center justify-center space-x-4 animate-slideDown">
-          <Award className="w-12 h-12 text-yellow-400" />
-          <span>Hall of Fame</span>
-          <Award className="w-12 h-12 text-yellow-400" />
-        </h2>
-        
-        {hallOfFameEntries.length === 0 ? (
-            <p className="text-gray-400 text-center py-16 text-xl">The Hall of Fame is empty. A new legend awaits their coronation!</p>
-        ) : (
-            <>
-                {latestWinner && (
-                     <div className="mb-12 bg-gradient-to-br from-gray-900 to-black rounded-2xl p-8 shadow-2xl border-2 border-yellow-500/50 relative overflow-hidden group animate-fadeInUp">
-                         <div className="absolute -top-1/2 -left-1/2 w-full h-[200%] bg-gradient-to-r from-yellow-500/0 via-yellow-500/20 to-yellow-500/0 animate-spotlight"></div>
-                         <div className="text-center mb-6">
-                            <h3 className="text-4xl font-bold text-white tracking-wider">LATEST INDUCTEE</h3>
-                         </div>
-                         <div className="flex flex-col md:flex-row items-center gap-8">
-                             <div className="md:w-1/2 relative">
-                                 <img src={latestWinner.imageUrl} alt={latestWinner.title} className="rounded-xl shadow-2xl w-full h-auto object-cover border-4 border-yellow-400"/>
-                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
-                             </div>
-                             <div className="md:w-1/2 text-center md:text-left">
-                                 <h4 className="text-5xl font-black text-white mb-3">{latestWinner.title}</h4>
-                                 <p className="text-2xl text-yellow-400 font-semibold">{latestWinner.description}</p>
-                             </div>
-                         </div>
-                     </div>
-                )}
-                
-                {previousWinners.length > 0 && (
-                    <>
-                        <h3 className="text-3xl font-bold text-white text-center my-12 border-t border-b border-gray-700 py-4">Previous Champions</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {previousWinners.map((entry, index) => (
-                              <div 
-                                key={entry.id}
-                                className="bg-gray-900 rounded-xl overflow-hidden shadow-xl border border-gray-800 hover:border-yellow-400 transition-all duration-500 transform hover:scale-105 hover:shadow-yellow-400/20 flex flex-col group"
-                                style={{ animationDelay: `${index * 150}ms` }}
-                              >
-                                <div className="relative h-72 bg-black overflow-hidden">
-                                  {entry.imageUrl ? (
-                                    <img 
-                                      src={entry.imageUrl} 
-                                      alt={entry.title}
-                                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    />
-                                  ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <Trophy className="w-20 h-20 text-gray-600" />
-                                    </div>
-                                  )}
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0"></div>
-                                   <div className="absolute bottom-4 left-4">
-                                        <Trophy className="w-10 h-10 text-yellow-500 animate-pulse"/>
-                                   </div>
-                                </div>
-                                <div className="p-6 text-center bg-gray-900">
-                                  <h4 className="text-2xl font-bold text-white mb-1">{entry.title}</h4>
-                                  {entry.description && <p className="text-yellow-500">{entry.description}</p>}
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-            </>
-        )}
-      </div>
-       <style>{`
-            @keyframes spotlight {
-                0% { transform: translateX(-100%) skewX(-15deg); }
-                100% { transform: translateX(200%) skewX(-15deg); }
-            }
-            .animate-spotlight {
-                animation: spotlight 3s linear infinite;
-            }
-        `}</style>
-    </div>
-  );
-  };
-
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     RENDER
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen" style={{ background: 'var(--bg-deep)' }}>
       <Navigation />
       {currentView === 'home' && <HomeView events={sortedEvents} />}
       {currentView === 'make-picks' && <MakePicksView />}

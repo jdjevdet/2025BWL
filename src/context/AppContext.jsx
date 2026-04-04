@@ -315,6 +315,17 @@ export const AppProvider = ({ children }) => {
     } catch (error) { console.error("Error revoking badge:", error); alert("Failed to revoke badge."); }
   };
 
+  const markBadgesSeen = async (playerId, badgeIds) => {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+    const seenBadges = player.seenBadges || [];
+    const newSeen = [...new Set([...seenBadges, ...badgeIds])];
+    if (newSeen.length === seenBadges.length) return; // nothing new
+    try {
+      await setDoc(doc(db, "players", playerId), { seenBadges: newSeen }, { merge: true });
+    } catch (error) { console.error("Error marking badges seen:", error); }
+  };
+
   const value = {
     currentView, setCurrentView,
     isAdmin, setIsAdmin,
@@ -335,7 +346,7 @@ export const AppProvider = ({ children }) => {
     uploadAvatar, removeAvatar,
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
     selectedPlayerName, setSelectedPlayerName, navigateToPlayer,
-    awardBadge, revokeBadge,
+    awardBadge, revokeBadge, markBadgesSeen,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

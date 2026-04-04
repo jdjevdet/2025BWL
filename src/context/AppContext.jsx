@@ -20,6 +20,7 @@ export const AppProvider = ({ children }) => {
 
   const [authenticatedPlayerId, setAuthenticatedPlayerId] = useState(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [selectedPlayerName, setSelectedPlayerName] = useState(null);
 
   const [events, setEvents] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -290,6 +291,30 @@ export const AppProvider = ({ children }) => {
     catch (error) { console.error("Error deleting Hall of Fame entry: ", error); alert("Failed to delete."); }
   };
 
+  const navigateToPlayer = (playerName) => {
+    setSelectedPlayerName(playerName);
+    setCurrentView('player-profile');
+  };
+
+  const awardBadge = async (playerId, badgeId) => {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+    const currentBadges = player.manualBadges || [];
+    if (currentBadges.includes(badgeId)) return;
+    try {
+      await setDoc(doc(db, "players", playerId), { manualBadges: [...currentBadges, badgeId] }, { merge: true });
+    } catch (error) { console.error("Error awarding badge:", error); alert("Failed to award badge."); }
+  };
+
+  const revokeBadge = async (playerId, badgeId) => {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+    const currentBadges = player.manualBadges || [];
+    try {
+      await setDoc(doc(db, "players", playerId), { manualBadges: currentBadges.filter(b => b !== badgeId) }, { merge: true });
+    } catch (error) { console.error("Error revoking badge:", error); alert("Failed to revoke badge."); }
+  };
+
   const value = {
     currentView, setCurrentView,
     isAdmin, setIsAdmin,
@@ -309,6 +334,8 @@ export const AppProvider = ({ children }) => {
     deletePlayer, addPlayer, adjustBonusPoints,
     uploadAvatar, removeAvatar,
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
+    selectedPlayerName, setSelectedPlayerName, navigateToPlayer,
+    awardBadge, revokeBadge,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

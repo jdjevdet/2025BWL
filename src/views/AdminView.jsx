@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Plus, Edit2, Trash2, Save, Award, Users, ChevronUp, ChevronDown, X, Shield, Camera, KeyRound } from 'lucide-react';
+import { Trophy, Plus, Edit2, Trash2, Save, Award, Users, ChevronUp, ChevronDown, X, Shield, Camera, KeyRound, Crown, Swords } from 'lucide-react';
 import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import { calculateTotalPoints } from '../utils/scoring';
+import { BADGE_DEFINITIONS, getPlayerBadges } from '../utils/badges';
 import PlayerAvatar from '../components/PlayerAvatar';
 
 /* ──────────────────────────────────────────────
@@ -343,12 +344,16 @@ const EventEditorCard = ({
    ────────────────────────────────────────────── */
 const PlayerManagement = () => {
   const {
-    players, sortedEvents, isPlayerManagementMinimized, setIsPlayerManagementMinimized,
+    players, sortedEvents, events, isPlayerManagementMinimized, setIsPlayerManagementMinimized,
     deletePlayer, addPlayer, adjustBonusPoints, uploadAvatar, removeAvatar,
+    awardBadge, revokeBadge,
   } = useApp();
   const [localPlayerName, setLocalPlayerName] = useState('');
   const [settingPinFor, setSettingPinFor] = useState(null);
   const [adminPinInput, setAdminPinInput] = useState('');
+  const [managingBadgesFor, setManagingBadgesFor] = useState(null);
+
+  const legendaryBadges = BADGE_DEFINITIONS.filter(b => b.rarity === 'legendary');
 
   const handleAddPlayer = () => { addPlayer(localPlayerName); setLocalPlayerName(''); };
 
@@ -502,14 +507,65 @@ const PlayerManagement = () => {
                       </>
                     )}
 
-                    <button
-                      onClick={() => deletePlayer(player.id)}
-                      className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-red-500/20 text-red-400/70 hover:text-red-400 hover:border-red-500/40 transition-all ml-auto"
-                    >
-                      Delete Player
-                    </button>
+                      {/* Badge management toggle */}
+                      <button
+                        onClick={() => setManagingBadgesFor(managingBadgesFor === player.id ? null : player.id)}
+                        className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-[--gold-dark]/30 text-[--gold]/70 hover:text-[--gold] hover:border-[--gold-dark] transition-all flex items-center gap-1.5"
+                      >
+                        <Crown className="w-3 h-3" />
+                        Badges
+                      </button>
+
+                      <button
+                        onClick={() => deletePlayer(player.id)}
+                        className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-red-500/20 text-red-400/70 hover:text-red-400 hover:border-red-500/40 transition-all ml-auto"
+                      >
+                        Delete Player
+                      </button>
+                    </div>
+
+                    {/* Badge management panel */}
+                    {managingBadgesFor === player.id && (() => {
+                      const playerBadges = getPlayerBadges(player, events, players);
+                      const manualBadges = player.manualBadges || [];
+                      return (
+                        <div className="px-3.5 pb-3 animate-fadeIn">
+                          <div className="p-3 rounded-lg border border-[--gold-dark]/20" style={{ background: 'rgba(201,168,76,0.03)' }}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[--gold] mb-2 flex items-center gap-1.5">
+                              <Crown className="w-3 h-3" /> Legendary Badges (Admin-Awarded)
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {legendaryBadges.map(badge => {
+                                const isAwarded = manualBadges.includes(badge.id);
+                                return (
+                                  <button
+                                    key={badge.id}
+                                    onClick={() => isAwarded ? revokeBadge(player.id, badge.id) : awardBadge(player.id, badge.id)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                                      isAwarded
+                                        ? 'border-[--gold] text-[--gold] bg-[--gold]/5 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400'
+                                        : 'border-[--border-light] text-[--text-secondary] hover:text-[--gold] hover:border-[--gold-dark]'
+                                    }`}
+                                  >
+                                    {badge.id === 'mr-predictamania' ? <Crown className="w-3 h-3" /> : <Trophy className="w-3 h-3" />}
+                                    {badge.name}
+                                    {isAwarded && <X className="w-3 h-3 ml-0.5" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {playerBadges.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-[--border]">
+                                <p className="text-[10px] text-[--text-muted] mb-1">
+                                  All badges ({playerBadges.length}): {playerBadges.map(b => b.name).join(', ')}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                </div>
               ))
             )}
           </div>

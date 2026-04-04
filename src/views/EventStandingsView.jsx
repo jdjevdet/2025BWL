@@ -5,7 +5,7 @@ import { historicalScores, historicalEventNames } from '../utils/scoring';
 import PlayerAvatar from '../components/PlayerAvatar';
 
 const EventStandingsView = () => {
-  const { selectedEvent, setCurrentView, players } = useApp();
+  const { selectedEvent, setCurrentView, players, navigateToPlayer } = useApp();
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   if (!selectedEvent) return null;
@@ -70,7 +70,10 @@ const EventStandingsView = () => {
                   </span>
                   <PlayerAvatar player={players.find(p => p.name === player.name) || player} size={isTop3 ? 'md' : 'sm'} />
                   <div className="flex-1 min-w-0">
-                    <p className={`font-outfit font-bold text-lg sm:text-xl truncate ${isTop3 ? 'text-white' : 'text-white'}`}>
+                    <p
+                      className={`font-outfit font-bold text-lg sm:text-xl truncate hover:text-[--gold] transition-colors cursor-pointer ${isTop3 ? 'text-white' : 'text-white'}`}
+                      onClick={(e) => { e.stopPropagation(); navigateToPlayer(player.name); }}
+                    >
                       {player.name}
                     </p>
                     <div className="w-full h-1 rounded-full mt-1.5 overflow-hidden" style={{ background: isTop3 ? 'rgba(255,255,255,0.15)' : 'var(--bg-elevated)' }}>

@@ -11,6 +11,7 @@ import HeadToHeadView from './views/HeadToHeadView';
 import HallOfFameView from './views/HallOfFameView';
 import AdminLoginView from './views/AdminLoginView';
 import AdminView from './views/AdminView';
+import PlayerProfileView from './views/PlayerProfileView';
 
 const AppContent = () => {
   const { currentView, isAdmin } = useApp();
@@ -26,6 +27,7 @@ const AppContent = () => {
       {currentView === 'standings' && <StandingsView />}
       {currentView === 'head-to-head' && <HeadToHeadView />}
       {currentView === 'halloffame' && <HallOfFameView />}
+      {currentView === 'player-profile' && <PlayerProfileView />}
       {currentView === 'login' && <AdminLoginView />}
       {currentView === 'admin' && isAdmin && <AdminView />}
     </div>

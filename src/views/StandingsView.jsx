@@ -5,7 +5,7 @@ import { calculateTotalPoints, getPlayerBreakdown, historicalScores } from '../u
 import PlayerAvatar from '../components/PlayerAvatar';
 
 const StandingsView = () => {
-  const { players, sortedEvents, setCurrentView } = useApp();
+  const { players, sortedEvents, setCurrentView, navigateToPlayer } = useApp();
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   const allPlayerNames = useMemo(() => {
@@ -71,7 +71,10 @@ const StandingsView = () => {
                   </span>
                   <PlayerAvatar player={players.find(p => p.name === player.name) || player} size={isTop3 ? 'md' : 'sm'} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-outfit font-bold text-lg sm:text-xl text-white truncate">{player.name}</p>
+                    <p
+                      className="font-outfit font-bold text-lg sm:text-xl text-white truncate hover:text-[--gold] transition-colors cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); navigateToPlayer(player.name); }}
+                    >{player.name}</p>
                     <div className="w-full h-1 rounded-full mt-1.5 overflow-hidden" style={{ background: isTop3 ? 'rgba(255,255,255,0.15)' : 'var(--bg-elevated)' }}>
                       <div
                         className="h-full rounded-full transition-all duration-700"

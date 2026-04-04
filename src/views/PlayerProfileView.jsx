@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, Calendar, Trophy, TrendingUp, Target, Swords, Hash } from 'lucide-react';
+import { ChevronRight, ChevronDown, Calendar, Trophy, TrendingUp, Target, Swords, Hash, Eye } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calculateTotalPoints, getPlayerBreakdown, historicalScores, historicalEventNames } from '../utils/scoring';
 import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, STANDARD_BADGE_COUNT } from '../utils/badges';
@@ -10,6 +10,7 @@ import BadgeModal from '../components/BadgeModal';
 const PlayerProfileView = () => {
   const { players, sortedEvents, events, setCurrentView, setSelectedEvent } = useApp();
   const [selectedBadge, setSelectedBadge] = useState(null);
+  const [showAllBadges, setShowAllBadges] = useState(false);
 
   // Get player name from URL-like state or context
   const { selectedPlayerName } = useApp();
@@ -91,9 +92,16 @@ const PlayerProfileView = () => {
     return acc;
   }, []);
 
-  // Locked badges (not earned)
+  // Locked badges (not earned) — excludes secret rares
   const earnedIds = new Set(badges.map(b => b.id));
   const lockedBadges = BADGE_DEFINITIONS.filter(b => !earnedIds.has(b.id) && b.autoEarn && b.rarity !== 'secret-rare');
+
+  // All standard badges grouped by rarity (for "See All" view)
+  const allStandardByRarity = RARITY_ORDER.filter(r => r !== 'secret-rare').reduce((acc, rarity) => {
+    const all = BADGE_DEFINITIONS.filter(b => b.rarity === rarity);
+    if (all.length > 0) acc.push({ rarity, badges: all });
+    return acc;
+  }, []);
 
   return (
     <div className="min-h-screen profile-hero-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
@@ -254,11 +262,11 @@ const PlayerProfileView = () => {
           ))}
 
           {/* Locked badges */}
-          {lockedBadges.length > 0 && (
+          {lockedBadges.length > 0 && !showAllBadges && (
             <div className="mt-8">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-[--text-muted] opacity-40" />
-                <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[--text-muted]">
+                <div className="w-2 h-2 rounded-full opacity-50" style={{ background: 'var(--text-secondary)' }} />
+                <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-[--text-secondary]">
                   Locked
                 </h3>
                 <div className="flex-1 h-px bg-[--border]" />
@@ -268,21 +276,93 @@ const PlayerProfileView = () => {
                   <button
                     key={badge.id}
                     onClick={() => setSelectedBadge(badge)}
-                    className="rounded-2xl border border-[--border] p-5 flex flex-col items-center gap-3 text-center opacity-30 hover:opacity-50 transition-all cursor-pointer"
+                    className="rounded-2xl border border-[--border] p-5 flex flex-col items-center gap-3 text-center opacity-50 hover:opacity-70 transition-all cursor-pointer"
                     style={{ background: 'var(--bg-elevated)' }}
                   >
                     <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'var(--bg-input)' }}>
-                      <span className="text-2xl text-[--text-muted]">?</span>
+                      <span className="text-2xl text-[--text-secondary]">?</span>
                     </div>
                     <div>
-                      <p className="font-bebas text-lg tracking-wide text-[--text-muted] leading-tight">{badge.name}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[--text-muted] mt-0.5">
+                      <p className="font-bebas text-lg tracking-wide text-[--text-secondary] leading-tight">{badge.name}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] mt-0.5" style={{ color: RARITY_CONFIG[badge.rarity].color, opacity: 0.7 }}>
                         {RARITY_CONFIG[badge.rarity].label}
                       </p>
                     </div>
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* See All Badges button */}
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => setShowAllBadges(!showAllBadges)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[--border-light] text-sm font-medium text-[--text-secondary] hover:text-[--gold] hover:border-[--gold-dark] transition-all"
+              style={{ background: 'var(--bg-elevated)' }}
+            >
+              <Eye className="w-4 h-4" />
+              {showAllBadges ? 'Hide Full Collection' : 'See All Badges'}
+              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllBadges ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* See All Badges expanded view */}
+          {showAllBadges && (
+            <div className="mt-6 animate-fadeInUp">
+              {allStandardByRarity.map(({ rarity, badges: allRarityBadges }) => (
+                <div key={rarity} className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: RARITY_CONFIG[rarity].color }}
+                    />
+                    <h3
+                      className="text-xs font-bold uppercase tracking-[0.15em]"
+                      style={{ color: RARITY_CONFIG[rarity].color }}
+                    >
+                      {RARITY_CONFIG[rarity].label}
+                    </h3>
+                    <span className="text-[10px] text-[--text-muted] font-medium">
+                      {allRarityBadges.filter(b => earnedIds.has(b.id)).length}/{allRarityBadges.length}
+                    </span>
+                    <div className="flex-1 h-px" style={{ background: `${RARITY_CONFIG[rarity].color}20` }} />
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {allRarityBadges.map(badge => {
+                      const isEarned = earnedIds.has(badge.id);
+                      if (isEarned) {
+                        return (
+                          <BadgeCard
+                            key={badge.id}
+                            badge={badge}
+                            size="md"
+                            onClick={() => setSelectedBadge(badge)}
+                          />
+                        );
+                      }
+                      return (
+                        <button
+                          key={badge.id}
+                          onClick={() => setSelectedBadge(badge)}
+                          className="rounded-2xl border border-[--border] p-5 flex flex-col items-center gap-3 text-center opacity-50 hover:opacity-70 transition-all cursor-pointer"
+                          style={{ background: 'var(--bg-elevated)' }}
+                        >
+                          <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'var(--bg-input)' }}>
+                            <span className="text-2xl text-[--text-secondary]">?</span>
+                          </div>
+                          <div>
+                            <p className="font-bebas text-lg tracking-wide text-[--text-secondary] leading-tight">{badge.name}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] mt-0.5" style={{ color: RARITY_CONFIG[badge.rarity].color, opacity: 0.7 }}>
+                              {RARITY_CONFIG[badge.rarity].label}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

@@ -451,7 +451,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     return score;
   };
 
-  // Helper: get ranked results for an event
+  // Helper: get ranked results for an event (only players who participated)
   const getEventRankings = (event) => {
     const isHistorical = historicalEventNames.includes(event.name?.toUpperCase?.());
     if (isHistorical) {
@@ -462,6 +462,12 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
         .sort((a, b) => b.score - a.score);
     }
     return allPlayers
+      .filter(p => {
+        // Only include players who actually picked in this event
+        const hasPicks = Object.keys(p.picks || {}).some(k => k.startsWith(`${event.id}-`));
+        const isSubmitted = event.submittedPlayers?.includes(p.name);
+        return hasPicks || isSubmitted;
+      })
       .map(p => ({ name: p.name, score: getEventScore(p, event) }))
       .sort((a, b) => b.score - a.score);
   };
@@ -522,27 +528,28 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   fbEvents.forEach(event => {
     const decidedMatches = event.matches.filter(m => m.winner);
     if (decidedMatches.length === 0) return;
-    const correct = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
-    const wrong = decidedMatches.length - correct;
-    if (wrong > correct && correct >= 0) hasUndercard = true;
+    // Only count matches where the player actually made a pick
+    const pickedDecided = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`]);
+    if (pickedDecided.length === 0) return;
+    const correct = pickedDecided.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+    const wrong = pickedDecided.length - correct;
+    if (wrong > correct) hasUndercard = true;
   });
   if (hasUndercard) earned.push('undercard');
 
-  // ── BANDWAGON FAN (pick same as every other player in a match) ──
+  // ── BANDWAGON FAN (pick same as every other player who picked in a match) ──
   let hasBandwagon = false;
   fbEvents.forEach(event => {
     event.matches.forEach(match => {
       const playerPick = player.picks?.[`${event.id}-${match.id}`];
       if (!playerPick) return;
-      const otherPlayers = allPlayers.filter(p => p.name !== player.name);
-      if (otherPlayers.length === 0) return;
-      const allSame = otherPlayers.every(p => {
-        const pick = p.picks?.[`${event.id}-${match.id}`];
-        return pick === playerPick;
-      });
-      // Only count if at least 2 other players also picked
-      const otherPickers = otherPlayers.filter(p => p.picks?.[`${event.id}-${match.id}`]);
-      if (allSame && otherPickers.length >= 2) hasBandwagon = true;
+      // Only consider players who actually made a pick for this match
+      const otherPickers = allPlayers.filter(p =>
+        p.name !== player.name && p.picks?.[`${event.id}-${match.id}`]
+      );
+      if (otherPickers.length < 2) return;
+      const allSame = otherPickers.every(p => p.picks?.[`${event.id}-${match.id}`] === playerPick);
+      if (allSame) hasBandwagon = true;
     });
   });
   if (hasBandwagon) earned.push('bandwagon-fan');
@@ -707,14 +714,22 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   if (hasContrarian) earned.push('contrarian');
 
   // ── PERFECT CARD ──
+  // Award when player picked correctly on ALL decided matches AND picked every match.
+  // For completed events: all matches must have winners and all must be correct.
+  // For live events: all matches that have winners must be correct, AND the player
+  // must have picked every decided match correctly (no misses allowed).
   let perfectCardCount = 0;
   fbEvents.forEach(event => {
-    const totalMatches = event.matches.filter(m => m.winner).length;
-    if (totalMatches === 0) return;
-    const correctPicks = event.matches.filter(m =>
-      m.winner && player.picks?.[`${event.id}-${m.id}`] === m.winner
+    const decidedMatches = event.matches.filter(m => m.winner);
+    if (decidedMatches.length === 0) return;
+    // Player must have picked every decided match
+    const pickedAll = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`]);
+    if (!pickedAll) return;
+    const correctPicks = decidedMatches.filter(m =>
+      player.picks?.[`${event.id}-${m.id}`] === m.winner
     ).length;
-    if (correctPicks === totalMatches && totalMatches === event.matches.length) perfectCardCount++;
+    // All decided matches must be correct
+    if (correctPicks === decidedMatches.length) perfectCardCount++;
   });
   if (perfectCardCount >= 1) earned.push('perfect-card');
   if (perfectCardCount >= 2) earned.push('the-oracle');

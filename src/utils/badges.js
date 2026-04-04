@@ -82,6 +82,42 @@ export const BADGE_DEFINITIONS = [
     icon: 'CalendarCheck',
     autoEarn: true,
   },
+  {
+    id: 'undercard',
+    name: 'Undercard',
+    description: 'Get more wrong than right in an event.',
+    flavor: '"We all start somewhere... even at the bottom."',
+    rarity: 'common',
+    icon: 'ArrowDownUp',
+    autoEarn: true,
+  },
+  {
+    id: 'bandwagon-fan',
+    name: 'Bandwagon Fan',
+    description: 'Pick the same winner as every other player in at least one match.',
+    flavor: '"If everyone jumped off a cliff... you\'d jump too."',
+    rarity: 'common',
+    icon: 'Handshake',
+    autoEarn: true,
+  },
+  {
+    id: 'split-decision',
+    name: 'Split Decision',
+    description: 'Have your picks be exactly 50/50 correct and wrong in an event.',
+    flavor: '"Perfectly balanced, as all things should be."',
+    rarity: 'common',
+    icon: 'Scale',
+    autoEarn: true,
+  },
+  {
+    id: 'newcomer',
+    name: 'Newcomer',
+    description: 'Participate in your first BWL season.',
+    flavor: '"Fresh meat for the prediction machine."',
+    rarity: 'common',
+    icon: 'Baby',
+    autoEarn: true,
+  },
   // ── UNCOMMON ──
   {
     id: 'hat-trick',
@@ -117,6 +153,51 @@ export const BADGE_DEFINITIONS = [
     flavor: '"They all laughed... until the bell rang."',
     rarity: 'uncommon',
     icon: 'Fingerprint',
+    autoEarn: true,
+  },
+  {
+    id: 'buzzer-beater',
+    name: 'Buzzer Beater',
+    description: 'Submit your picks within the last hour before the deadline.',
+    flavor: '"Living on the edge — picks at the last second."',
+    rarity: 'uncommon',
+    icon: 'Timer',
+    autoEarn: true,
+  },
+  {
+    id: 'upset-spotter',
+    name: 'Upset Spotter',
+    description: 'Correctly pick 3 or more underdogs (least-picked options) across your career.',
+    flavor: '"You see what others refuse to believe."',
+    rarity: 'uncommon',
+    icon: 'Crosshair',
+    autoEarn: true,
+  },
+  {
+    id: 'clutch-performer',
+    name: 'Clutch Performer',
+    description: 'Get the last match of an event correct when it decides your final ranking.',
+    flavor: '"When everything is on the line, you deliver."',
+    rarity: 'uncommon',
+    icon: 'Zap',
+    autoEarn: true,
+  },
+  {
+    id: 'dark-horse',
+    name: 'Dark Horse',
+    description: 'Finish top 3 in an event after being bottom half in the previous one.',
+    flavor: '"Nobody saw it coming. Except you."',
+    rarity: 'uncommon',
+    icon: 'Moon',
+    autoEarn: true,
+  },
+  {
+    id: 'contrarian',
+    name: 'Contrarian',
+    description: 'Pick the least-popular option in 3 or more matches of a single event.',
+    flavor: '"You don\'t follow the crowd — you ARE the crowd."',
+    rarity: 'uncommon',
+    icon: 'AlertTriangle',
     autoEarn: true,
   },
   // ── RARE ──
@@ -156,6 +237,42 @@ export const BADGE_DEFINITIONS = [
     icon: 'Medal',
     autoEarn: true,
   },
+  {
+    id: 'cinderella-run',
+    name: 'Cinderella Run',
+    description: 'Go from last place globally to top 3 within a single season.',
+    flavor: '"From the ashes, a champion rises."',
+    rarity: 'rare',
+    icon: 'Sparkles',
+    autoEarn: true,
+  },
+  {
+    id: 'head-hunter',
+    name: 'Head Hunter',
+    description: 'Beat every other player head-to-head at least once across events.',
+    flavor: '"No one is safe. Everyone gets got."',
+    rarity: 'rare',
+    icon: 'Search',
+    autoEarn: true,
+  },
+  {
+    id: 'near-perfect',
+    name: 'Near Perfect',
+    description: 'Miss only 1 pick in an event with 6 or more matches.',
+    flavor: '"So close to perfection it hurts."',
+    rarity: 'rare',
+    icon: 'Star',
+    autoEarn: true,
+  },
+  {
+    id: 'rival-slayer',
+    name: 'Rival Slayer',
+    description: 'Win an event when you were the lowest-ranked player entering it.',
+    flavor: '"The ultimate comeback. No one believed — except you."',
+    rarity: 'rare',
+    icon: 'Skull',
+    autoEarn: true,
+  },
   // ── EPIC ──
   {
     id: 'the-oracle',
@@ -184,6 +301,33 @@ export const BADGE_DEFINITIONS = [
     icon: 'ShieldOff',
     autoEarn: true,
   },
+  {
+    id: 'grandmaster',
+    name: 'Grandmaster',
+    description: 'Achieve 75%+ overall career accuracy across 5 or more events.',
+    flavor: '"A mind so sharp it cuts through every card."',
+    rarity: 'epic',
+    icon: 'Brain',
+    autoEarn: true,
+  },
+  {
+    id: 'unbreakable',
+    name: 'Unbreakable',
+    description: 'Win 5 or more events total across all time.',
+    flavor: '"They keep coming back, and they keep winning."',
+    rarity: 'epic',
+    icon: 'Infinity',
+    autoEarn: true,
+  },
+  {
+    id: 'final-boss',
+    name: 'Final Boss',
+    description: 'Finish 1st in both the first and last event of a season.',
+    flavor: '"The alpha and the omega. Beginning and end."',
+    rarity: 'epic',
+    icon: 'Flag',
+    autoEarn: true,
+  },
   // ── LEGENDARY (admin-only) ──
   {
     id: 'mr-predictamania',
@@ -201,6 +345,60 @@ export const BADGE_DEFINITIONS = [
     flavor: '"The greatest to ever do it. Period."',
     rarity: 'legendary',
     icon: 'Trophy',
+    autoEarn: false,
+  },
+  {
+    id: 'hall-of-famer',
+    name: 'Hall of Famer',
+    description: 'Inducted into the BWL Hall of Fame.',
+    flavor: '"Your name echoes through the halls of eternity."',
+    rarity: 'legendary',
+    icon: 'Award',
+    autoEarn: false,
+  },
+  {
+    id: 'the-streak',
+    name: 'The Streak',
+    description: 'Won an unprecedented number of consecutive events.',
+    flavor: '"The streak is alive. The streak is UNBREAKABLE."',
+    rarity: 'legendary',
+    icon: 'Flame',
+    autoEarn: false,
+  },
+  {
+    id: 'royal-rumble-champion',
+    name: 'Royal Rumble Champion',
+    description: 'Awarded for Royal Rumble event excellence.',
+    flavor: '"30 superstars. One ring. And you called it all."',
+    rarity: 'legendary',
+    icon: 'Bookmark',
+    autoEarn: false,
+  },
+  {
+    id: 'mitb-champion',
+    name: 'Money in the Bank Champion',
+    description: 'Awarded for Money in the Bank event excellence.',
+    flavor: '"You climbed the ladder and cashed in — flawlessly."',
+    rarity: 'legendary',
+    icon: 'Briefcase',
+    autoEarn: false,
+  },
+  {
+    id: 'survivor-series-champion',
+    name: 'Survivor Series Champion',
+    description: 'Awarded for Survivor Series event excellence.',
+    flavor: '"The sole survivor. The last one standing."',
+    rarity: 'legendary',
+    icon: 'Snowflake',
+    autoEarn: false,
+  },
+  {
+    id: 'summerslam-champion',
+    name: 'SummerSlam Champion',
+    description: 'Awarded for SummerSlam event excellence.',
+    flavor: '"The biggest party of the summer — and you owned it."',
+    rarity: 'legendary',
+    icon: 'Sun',
     autoEarn: false,
   },
 ];
@@ -222,9 +420,10 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     e.matches && e.matches.length > 0
   );
 
-  // Helper: count events participated in
-  const getParticipatedEvents = () => {
+  // Helper: count events participated in (returns { total, fbParticipated })
+  const getParticipationData = () => {
     let count = 0;
+    const fbParticipated = [];
     // Historical
     historicalEventNames.forEach(name => {
       if (historicalScores[name]?.[player.name] !== undefined) count++;
@@ -234,10 +433,13 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       if (!historicalEventNames.includes(event.name.toUpperCase())) {
         const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
         const isSubmitted = event.submittedPlayers?.includes(player.name);
-        if (hasPicks || isSubmitted) count++;
+        if (hasPicks || isSubmitted) {
+          count++;
+          fbParticipated.push(event.id);
+        }
       }
     });
-    return count;
+    return { total: count, fbParticipated };
   };
 
   // Helper: get event score for a player in a firebase event
@@ -264,7 +466,24 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       .sort((a, b) => b.score - a.score);
   };
 
-  const participatedCount = getParticipatedEvents();
+  // Helper: get most-picked and least-picked option for a match
+  const getPickPopularity = (event, match) => {
+    const pickCounts = {};
+    match.options.forEach(o => pickCounts[o] = 0);
+    allPlayers.forEach(p => {
+      const pick = p.picks?.[`${event.id}-${match.id}`];
+      if (pick && pickCounts[pick] !== undefined) pickCounts[pick]++;
+    });
+    const counts = Object.entries(pickCounts);
+    const maxPicks = Math.max(...counts.map(([, c]) => c));
+    const minPicks = Math.min(...counts.map(([, c]) => c));
+    const mostPicked = counts.find(([, c]) => c === maxPicks)?.[0];
+    const leastPicked = counts.find(([, c]) => c === minPicks)?.[0];
+    const totalPickers = allPlayers.filter(p => p.picks?.[`${event.id}-${match.id}`]).length;
+    return { pickCounts, mostPicked, leastPicked, totalPickers };
+  };
+
+  const { total: participatedCount, fbParticipated } = getParticipationData();
 
   // ── FIRST PICK ──
   if (participatedCount >= 1) earned.push('first-pick');
@@ -274,6 +493,9 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
 
   // ── VETERAN (10+ events) ──
   if (participatedCount >= 10) earned.push('veteran');
+
+  // ── NEWCOMER (participated in at least 1 firebase event = current season) ──
+  if (fbParticipated.length >= 1) earned.push('newcomer');
 
   // ── FULL CARD ──
   let hasFullCard = false;
@@ -295,6 +517,46 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   }
   if (onBoard) earned.push('on-the-board');
 
+  // ── UNDERCARD (more wrong than right in an event) ──
+  let hasUndercard = false;
+  fbEvents.forEach(event => {
+    const decidedMatches = event.matches.filter(m => m.winner);
+    if (decidedMatches.length === 0) return;
+    const correct = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+    const wrong = decidedMatches.length - correct;
+    if (wrong > correct && correct >= 0) hasUndercard = true;
+  });
+  if (hasUndercard) earned.push('undercard');
+
+  // ── BANDWAGON FAN (pick same as every other player in a match) ──
+  let hasBandwagon = false;
+  fbEvents.forEach(event => {
+    event.matches.forEach(match => {
+      const playerPick = player.picks?.[`${event.id}-${match.id}`];
+      if (!playerPick) return;
+      const otherPlayers = allPlayers.filter(p => p.name !== player.name);
+      if (otherPlayers.length === 0) return;
+      const allSame = otherPlayers.every(p => {
+        const pick = p.picks?.[`${event.id}-${match.id}`];
+        return pick === playerPick;
+      });
+      // Only count if at least 2 other players also picked
+      const otherPickers = otherPlayers.filter(p => p.picks?.[`${event.id}-${match.id}`]);
+      if (allSame && otherPickers.length >= 2) hasBandwagon = true;
+    });
+  });
+  if (hasBandwagon) earned.push('bandwagon-fan');
+
+  // ── SPLIT DECISION (exactly 50/50 in an event) ──
+  let hasSplitDecision = false;
+  fbEvents.forEach(event => {
+    const decidedMatches = event.matches.filter(m => m.winner);
+    if (decidedMatches.length < 2 || decidedMatches.length % 2 !== 0) return;
+    const correct = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+    if (correct === decidedMatches.length / 2) hasSplitDecision = true;
+  });
+  if (hasSplitDecision) earned.push('split-decision');
+
   // ── HAT TRICK (3 correct in a row within an event) ──
   let hasHatTrick = false;
   fbEvents.forEach(event => {
@@ -303,7 +565,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       if (match.winner && player.picks?.[`${event.id}-${match.id}`] === match.winner) {
         streak++;
         if (streak >= 3) hasHatTrick = true;
-      } else {
+      } else if (match.winner) {
         streak = 0;
       }
     });
@@ -330,18 +592,9 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     let majorityCorrect = 0;
     event.matches.forEach(match => {
       if (!match.winner) return;
-      // Find most-picked option
-      const pickCounts = {};
-      match.options.forEach(o => pickCounts[o] = 0);
-      allPlayers.forEach(p => {
-        const pick = p.picks?.[`${event.id}-${match.id}`];
-        if (pick && pickCounts[pick] !== undefined) pickCounts[pick]++;
-      });
-      const maxPicks = Math.max(...Object.values(pickCounts));
-      const majorityOption = Object.entries(pickCounts).find(([, c]) => c === maxPicks)?.[0];
-      // Did this player pick the majority AND was it correct?
+      const { mostPicked } = getPickPopularity(event, match);
       const playerPick = player.picks?.[`${event.id}-${match.id}`];
-      if (playerPick === majorityOption && playerPick === match.winner) majorityCorrect++;
+      if (playerPick === mostPicked && playerPick === match.winner) majorityCorrect++;
     });
     if (majorityCorrect >= 5) hasMajority = true;
   });
@@ -354,7 +607,6 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       if (!match.winner) return;
       const playerPick = player.picks?.[`${event.id}-${match.id}`];
       if (playerPick !== match.winner) return;
-      // Count how many picked the winner
       const winnerPickers = allPlayers.filter(p =>
         p.picks?.[`${event.id}-${match.id}`] === match.winner
       );
@@ -364,6 +616,95 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     });
   });
   if (hasAgainstGrain) earned.push('against-the-grain');
+
+  // ── BUZZER BEATER (submitted within last hour before deadline) ──
+  // We check if the event has a deadline and the player is in submittedPlayers
+  // Since we don't track exact submission time, we approximate: if the event has
+  // submittedPlayers and a deadline, and the player submitted, we check event metadata
+  // For now, this badge is tracked via a special field 'buzzerBeaters' on the player doc
+  // that the submit function can set. We'll check for it here.
+  if (player.buzzerBeaters && player.buzzerBeaters.length > 0) {
+    earned.push('buzzer-beater');
+  }
+
+  // ── UPSET SPOTTER (correctly picked 3+ underdogs career-wide) ──
+  let underdogCorrect = 0;
+  fbEvents.forEach(event => {
+    event.matches.forEach(match => {
+      if (!match.winner || match.options.length < 2) return;
+      const { leastPicked, pickCounts } = getPickPopularity(event, match);
+      const playerPick = player.picks?.[`${event.id}-${match.id}`];
+      // Only count if the least-picked is truly an underdog (less than others)
+      const counts = Object.values(pickCounts);
+      const minCount = Math.min(...counts);
+      const maxCount = Math.max(...counts);
+      if (playerPick === leastPicked && playerPick === match.winner && minCount < maxCount) {
+        underdogCorrect++;
+      }
+    });
+  });
+  if (underdogCorrect >= 3) earned.push('upset-spotter');
+
+  // ── CLUTCH PERFORMER (last match correct and it decided ranking) ──
+  let hasClutch = false;
+  fbEvents.forEach(event => {
+    const matches = event.matches || [];
+    if (matches.length === 0) return;
+    const lastMatch = matches[matches.length - 1];
+    if (!lastMatch.winner) return;
+    const playerPick = player.picks?.[`${event.id}-${lastMatch.id}`];
+    if (playerPick !== lastMatch.winner) return;
+    // Check if without the last match, player wouldn't be in top 3
+    const rankingsWithout = allPlayers
+      .map(p => {
+        let score = 0;
+        matches.slice(0, -1).forEach(m => {
+          if (m.winner && p.picks?.[`${event.id}-${m.id}`] === m.winner) score++;
+        });
+        return { name: p.name, score };
+      })
+      .sort((a, b) => b.score - a.score);
+    const rankWithout = rankingsWithout.findIndex(r => r.name === player.name);
+    const rankingsWith = getEventRankings(event);
+    const rankWith = rankingsWith.findIndex(r => r.name === player.name);
+    // Clutch = moved into top 3 because of last match, or stayed in top 3 by 1 point margin
+    if (rankWith < 3 && rankWithout >= 3) hasClutch = true;
+  });
+  if (hasClutch) earned.push('clutch-performer');
+
+  // ── DARK HORSE (top 3 after bottom half in previous event) ──
+  let hasDarkHorse = false;
+  const orderedFbEvents = [...fbEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
+  for (let i = 1; i < orderedFbEvents.length; i++) {
+    const prevEvent = orderedFbEvents[i - 1];
+    const currEvent = orderedFbEvents[i];
+    const prevRankings = getEventRankings(prevEvent);
+    const currRankings = getEventRankings(currEvent);
+    const prevRank = prevRankings.findIndex(r => r.name === player.name);
+    const currRank = currRankings.findIndex(r => r.name === player.name);
+    if (prevRank !== -1 && currRank !== -1 && currRank < 3 && prevRank >= Math.floor(prevRankings.length / 2)) {
+      hasDarkHorse = true;
+    }
+  }
+  if (hasDarkHorse) earned.push('dark-horse');
+
+  // ── CONTRARIAN (picked least-popular in 3+ matches of single event) ──
+  let hasContrarian = false;
+  fbEvents.forEach(event => {
+    let contrarianCount = 0;
+    event.matches.forEach(match => {
+      if (match.options.length < 2) return;
+      const playerPick = player.picks?.[`${event.id}-${match.id}`];
+      if (!playerPick) return;
+      const { leastPicked, pickCounts } = getPickPopularity(event, match);
+      const counts = Object.values(pickCounts);
+      const minCount = Math.min(...counts);
+      const maxCount = Math.max(...counts);
+      if (playerPick === leastPicked && minCount < maxCount) contrarianCount++;
+    });
+    if (contrarianCount >= 3) hasContrarian = true;
+  });
+  if (hasContrarian) earned.push('contrarian');
 
   // ── PERFECT CARD ──
   let perfectCardCount = 0;
@@ -375,20 +716,18 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     ).length;
     if (correctPicks === totalMatches && totalMatches === event.matches.length) perfectCardCount++;
   });
-  // Check historical too
-  historicalEventNames.forEach(name => {
-    const scores = historicalScores[name];
-    if (!scores) return;
-    const playerScore = scores[player.name];
-    if (playerScore === undefined) return;
-    const maxScore = Math.max(...Object.values(scores));
-    if (playerScore === maxScore && maxScore > 0) {
-      // Historical "perfect" = top score (approximation since we don't have match data)
-      // Only count if they actually got the max possible
-    }
-  });
   if (perfectCardCount >= 1) earned.push('perfect-card');
   if (perfectCardCount >= 2) earned.push('the-oracle');
+
+  // ── NEAR PERFECT (miss only 1 in 6+ match event) ──
+  let hasNearPerfect = false;
+  fbEvents.forEach(event => {
+    const decidedMatches = event.matches.filter(m => m.winner);
+    if (decidedMatches.length < 6) return;
+    const correct = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+    if (correct === decidedMatches.length - 1) hasNearPerfect = true;
+  });
+  if (hasNearPerfect) earned.push('near-perfect');
 
   // ── STREAK MASTER (top 3 in 3 consecutive events) ──
   const allOrderedEvents = [
@@ -422,21 +761,101 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
 
   // ── DOMINATOR (win event by 3+) ──
   let hasDominator = false;
+  let totalEventWins = 0;
   fbEvents.forEach(event => {
     const rankings = getEventRankings(event);
     if (rankings.length >= 2 && rankings[0].name === player.name) {
+      totalEventWins++;
       if (rankings[0].score - rankings[1].score >= 3) hasDominator = true;
+    } else if (rankings.length === 1 && rankings[0].name === player.name) {
+      totalEventWins++;
     }
   });
   historicalEventNames.forEach(name => {
     const scores = historicalScores[name];
     if (!scores || scores[player.name] === undefined) return;
     const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
-    if (sorted[0][0] === player.name && sorted.length >= 2) {
-      if (sorted[0][1] - sorted[1][1] >= 3) hasDominator = true;
+    if (sorted[0][0] === player.name) {
+      totalEventWins++;
+      if (sorted.length >= 2 && sorted[0][1] - sorted[1][1] >= 3) hasDominator = true;
     }
   });
   if (hasDominator) earned.push('dominator');
+
+  // ── UNBREAKABLE (5+ event wins all time) ──
+  if (totalEventWins >= 5) earned.push('unbreakable');
+
+  // ── CINDERELLA RUN (last place globally to top 3 in a season) ──
+  // Check firebase events only (current season)
+  let hasCinderella = false;
+  if (orderedFbEvents.length >= 2) {
+    let wasLastGlobal = false;
+    let wasTop3Global = false;
+    // Track cumulative scores through the season
+    const cumulativeScores = {};
+    orderedFbEvents.forEach(event => {
+      allPlayers.forEach(p => {
+        cumulativeScores[p.name] = (cumulativeScores[p.name] || 0) + getEventScore(p, event);
+      });
+      const sorted = Object.entries(cumulativeScores)
+        .filter(([, s]) => s > 0 || allPlayers.some(p => p.name === player.name))
+        .sort(([, a], [, b]) => b - a);
+      const playerIdx = sorted.findIndex(([n]) => n === player.name);
+      if (playerIdx === sorted.length - 1 && sorted.length >= 3) wasLastGlobal = true;
+      if (wasLastGlobal && playerIdx !== -1 && playerIdx < 3) {
+        hasCinderella = true;
+      }
+    });
+  }
+  if (hasCinderella) earned.push('cinderella-run');
+
+  // ── HEAD HUNTER (beat every other player h2h at least once) ──
+  let hasHeadHunter = false;
+  if (allPlayers.length >= 2) {
+    const otherPlayerNames = allPlayers.filter(p => p.name !== player.name).map(p => p.name);
+    const beaten = new Set();
+    fbEvents.forEach(event => {
+      const playerScore = getEventScore(player, event);
+      allPlayers.forEach(p => {
+        if (p.name === player.name) return;
+        if (getEventScore(p, event) < playerScore) beaten.add(p.name);
+      });
+    });
+    historicalEventNames.forEach(name => {
+      const scores = historicalScores[name];
+      if (!scores || scores[player.name] === undefined) return;
+      const myScore = scores[player.name];
+      Object.entries(scores).forEach(([n, s]) => {
+        if (n !== player.name && s < myScore) beaten.add(n);
+      });
+    });
+    if (otherPlayerNames.every(n => beaten.has(n))) hasHeadHunter = true;
+  }
+  if (hasHeadHunter) earned.push('head-hunter');
+
+  // ── RIVAL SLAYER (win event when lowest-ranked entering) ──
+  let hasRivalSlayer = false;
+  if (orderedFbEvents.length >= 2) {
+    for (let i = 1; i < orderedFbEvents.length; i++) {
+      const currEvent = orderedFbEvents[i];
+      // Calculate cumulative global standings BEFORE this event
+      const prevCumulative = {};
+      for (let j = 0; j < i; j++) {
+        allPlayers.forEach(p => {
+          prevCumulative[p.name] = (prevCumulative[p.name] || 0) + getEventScore(p, orderedFbEvents[j]);
+        });
+      }
+      const prevSorted = Object.entries(prevCumulative).sort(([, a], [, b]) => b - a);
+      const wasLowest = prevSorted.length >= 2 && prevSorted[prevSorted.length - 1][0] === player.name;
+      if (wasLowest) {
+        const currRankings = getEventRankings(currEvent);
+        if (currRankings.length > 0 && currRankings[0].name === player.name) {
+          hasRivalSlayer = true;
+        }
+      }
+    }
+  }
+  if (hasRivalSlayer) earned.push('rival-slayer');
 
   // ── DYNASTY (win 3+ firebase events) ──
   let fbWins = 0;
@@ -446,11 +865,43 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   });
   if (fbWins >= 3) earned.push('dynasty');
 
+  // ── GRANDMASTER (75%+ career accuracy across 5+ events) ──
+  let totalCorrect = 0;
+  let totalDecided = 0;
+  let eventsWithData = 0;
+  fbEvents.forEach(event => {
+    const decided = event.matches.filter(m => m.winner);
+    if (decided.length === 0) return;
+    const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+    if (!hasPicks) return;
+    eventsWithData++;
+    totalDecided += decided.length;
+    totalCorrect += decided.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+  });
+  if (eventsWithData >= 5 && totalDecided > 0 && (totalCorrect / totalDecided) >= 0.75) {
+    earned.push('grandmaster');
+  }
+
+  // ── FINAL BOSS (1st in both first and last event of the season) ──
+  let hasFinalBoss = false;
+  if (orderedFbEvents.length >= 2) {
+    const firstEvent = orderedFbEvents[0];
+    const lastEvent = orderedFbEvents[orderedFbEvents.length - 1];
+    const firstRankings = getEventRankings(firstEvent);
+    const lastRankings = getEventRankings(lastEvent);
+    if (
+      firstRankings.length > 0 && firstRankings[0].name === player.name &&
+      lastRankings.length > 0 && lastRankings[0].name === player.name
+    ) {
+      hasFinalBoss = true;
+    }
+  }
+  if (hasFinalBoss) earned.push('final-boss');
+
   // ── UNTOUCHABLE (#1 global for 3+ consecutive events) ──
   let globalStreak = 0;
   let hasUntouchable = false;
   allOrderedEvents.forEach((event, idx) => {
-    // Calculate global standings up to this event
     const eventsUpToNow = allOrderedEvents.slice(0, idx + 1);
     const globalScores = {};
     eventsUpToNow.forEach(e => {

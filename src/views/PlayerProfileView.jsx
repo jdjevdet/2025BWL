@@ -90,7 +90,7 @@ const PlayerProfileView = () => {
 
   // Locked badges (not earned)
   const earnedIds = new Set(badges.map(b => b.id));
-  const lockedBadges = BADGE_DEFINITIONS.filter(b => !earnedIds.has(b.id) && b.autoEarn);
+  const lockedBadges = BADGE_DEFINITIONS.filter(b => !earnedIds.has(b.id) && b.autoEarn && b.rarity !== 'secret-rare');
 
   return (
     <div className="min-h-screen profile-hero-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">

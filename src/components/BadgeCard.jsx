@@ -32,9 +32,9 @@ const BadgeCard = ({ badge, size = 'md', onClick }) => {
         title={badge.name}
       >
         <div className={`badge-icon-ring badge-icon-ring-${badge.rarity} ${s.ring} flex items-center justify-center`}>
-          <Icon className={s.icon} style={{ color: rarity.color }} />
+          <Icon className={s.icon} style={{ color: badge.rarity === 'secret-rare' ? '#fff' : rarity.color }} />
         </div>
-        {badge.rarity === 'legendary' && (
+        {(badge.rarity === 'legendary' || badge.rarity === 'secret-rare') && (
           <div className="badge-sparkles">
             <span /><span /><span /><span /><span /><span />
           </div>
@@ -52,9 +52,9 @@ const BadgeCard = ({ badge, size = 'md', onClick }) => {
     >
       <div className="relative">
         <div className={`badge-icon-ring badge-icon-ring-${badge.rarity} ${s.ring} flex items-center justify-center`}>
-          <Icon className={s.icon} style={{ color: rarity.color }} />
+          <Icon className={s.icon} style={{ color: badge.rarity === 'secret-rare' ? '#fff' : rarity.color }} />
         </div>
-        {(badge.rarity === 'legendary' || badge.rarity === 'epic') && (
+        {(badge.rarity === 'legendary' || badge.rarity === 'epic' || badge.rarity === 'secret-rare') && (
           <div className="badge-sparkles">
             <span /><span /><span /><span /><span /><span />
           </div>

@@ -4,7 +4,7 @@ import { historicalScores, historicalEventNames, historicalTotalMatches, calcula
    BADGE DEFINITIONS
    ══════════════════════════════════════════════ */
 
-export const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+export const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'secret-rare'];
 
 export const RARITY_CONFIG = {
   common: {
@@ -41,6 +41,13 @@ export const RARITY_CONFIG = {
     glow: 'rgba(212, 175, 55, 0.5)',
     bg: 'linear-gradient(145deg, #3d2e0a, #2a1f05)',
     border: '#c9a84c',
+  },
+  'secret-rare': {
+    label: 'Secret Rare',
+    color: '#e879f9',
+    glow: 'rgba(232, 121, 249, 0.5)',
+    bg: 'linear-gradient(145deg, #1a0a2e, #0d0620)',
+    border: '#c026d3',
   },
 };
 
@@ -597,6 +604,124 @@ export const BADGE_DEFINITIONS = [
     flavor: '"The biggest party of the summer — and you owned it."',
     rarity: 'legendary',
     icon: 'Sun',
+    autoEarn: false,
+  },
+  // ── SECRET RARE ──
+  {
+    id: 'the-completionist',
+    name: 'The Completionist',
+    description: 'Earn every single standard badge (all non-secret badges).',
+    flavor: '"You didn\'t just catch them all — you transcended them."',
+    rarity: 'secret-rare',
+    icon: 'Gem',
+    autoEarn: true,
+  },
+  {
+    id: 'full-roster',
+    name: 'Full Roster',
+    description: 'Earn at least one badge from every rarity tier (Common through Legendary).',
+    flavor: '"A taste of everything. A master of the collection."',
+    rarity: 'secret-rare',
+    icon: 'Star',
+    autoEarn: true,
+  },
+  {
+    id: 'the-prophecy',
+    name: 'The Prophecy',
+    description: 'Score 100% accuracy across 3 consecutive events.',
+    flavor: '"It was written in the stars. Every. Single. Time."',
+    rarity: 'secret-rare',
+    icon: 'Sparkles',
+    autoEarn: true,
+  },
+  {
+    id: 'one-in-a-million',
+    name: 'One in a Million',
+    description: 'Be the only player to correctly predict every match on a card.',
+    flavor: '"Seven billion people on this planet and only YOU saw it coming."',
+    rarity: 'secret-rare',
+    icon: 'Fingerprint',
+    autoEarn: true,
+  },
+  {
+    id: 'flawless-victory',
+    name: 'Flawless Victory',
+    description: 'Win an event without a single wrong pick when there are 7 or more matches.',
+    flavor: '"FINISH HIM. Perfect. Untouched. Absolute devastation."',
+    rarity: 'secret-rare',
+    icon: 'Shield',
+    autoEarn: true,
+  },
+  {
+    id: 'reverse-sweep',
+    name: 'Reverse Sweep',
+    description: 'Be ranked dead last, then finish the very next event in 1st place.',
+    flavor: '"From the grave to the throne in one fell swoop."',
+    rarity: 'secret-rare',
+    icon: 'RotateCcw',
+    autoEarn: true,
+  },
+  {
+    id: 'phoenix-rising',
+    name: 'Phoenix Rising',
+    description: 'Go from worst accuracy in one event to best accuracy in the very next.',
+    flavor: '"Ashes to glory. The ultimate resurrection."',
+    rarity: 'secret-rare',
+    icon: 'Flame',
+    autoEarn: true,
+  },
+  {
+    id: 'plot-armor',
+    name: 'Plot Armor',
+    description: 'Win an event by exactly 1 point on 3 separate occasions.',
+    flavor: '"The writers are clearly on your side."',
+    rarity: 'secret-rare',
+    icon: 'Shield',
+    autoEarn: true,
+  },
+  {
+    id: 'deja-vu',
+    name: 'Déjà Vu',
+    description: 'Make the exact same picks as another player for 2 consecutive events.',
+    flavor: '"A glitch in the matrix... or are you reading their mind?"',
+    rarity: 'secret-rare',
+    icon: 'Copy',
+    autoEarn: true,
+  },
+  {
+    id: 'the-lone-wolf',
+    name: 'The Lone Wolf',
+    description: 'Pick an option that literally no other player picked — and be right.',
+    flavor: '"You walked alone into the darkness... and the darkness blinked."',
+    rarity: 'secret-rare',
+    icon: 'Moon',
+    autoEarn: true,
+  },
+  {
+    id: 'shadow-champion',
+    name: 'Shadow Champion',
+    description: 'Finish in 2nd place at 5 different events. Always close, never quite there.',
+    flavor: '"The greatest runner-up the world has ever known."',
+    rarity: 'secret-rare',
+    icon: 'Medal',
+    autoEarn: true,
+  },
+  {
+    id: 'the-glitch',
+    name: 'The Glitch',
+    description: 'Earn 3 or more new badges from a single event.',
+    flavor: '"ERROR: Too many achievements unlocked simultaneously."',
+    rarity: 'secret-rare',
+    icon: 'Zap',
+    autoEarn: true,
+  },
+  {
+    id: 'the-chosen-one',
+    name: 'The Chosen One',
+    description: 'Win both Mr. Predictamania and the BWL regular season in the same year.',
+    flavor: '"Prophecy fulfilled. The one true champion. There can be only one."',
+    rarity: 'secret-rare',
+    icon: 'Crown',
     autoEarn: false,
   },
 ];
@@ -1554,6 +1679,159 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   });
   if (hasIronclad) earned.push('ironclad');
 
+  // ════════════════════���═════════════════
+  // SECRET RARE BADGES
+  // ══════════════════════════════════════
+
+  // ── FULL ROSTER (at least one badge from every standard rarity tier) ──
+  // We check this using the earned array so far + manual badges (passed separately)
+  // This is checked later in getPlayerBadges
+
+  // ── THE PROPHECY (100% accuracy across 3 consecutive events) ──
+  let hasProphecy = false;
+  for (let i = 0; i <= eventAccuracies.length - 3; i++) {
+    const three = eventAccuracies.slice(i, i + 3);
+    if (three.every(a => a !== null && a === 1.0)) hasProphecy = true;
+  }
+  if (hasProphecy) earned.push('the-prophecy');
+
+  // ── ONE IN A MILLION (only player to get perfect card in an event) ──
+  let hasOneInAMillion = false;
+  fbEvents.forEach(event => {
+    const decidedMatches = event.matches.filter(m => m.winner);
+    if (decidedMatches.length === 0) return;
+    // Check if this player got a perfect card
+    const playerPerfect = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`] === m.winner);
+    if (!playerPerfect) return;
+    // Check no other player also got a perfect card
+    const otherPerfect = allPlayers.some(p => {
+      if (p.name === player.name) return false;
+      return decidedMatches.every(m => p.picks?.[`${event.id}-${m.id}`] === m.winner);
+    });
+    if (!otherPerfect) hasOneInAMillion = true;
+  });
+  if (hasOneInAMillion) earned.push('one-in-a-million');
+
+  // ── FLAWLESS VICTORY (win event with 0 wrong picks, 7+ matches) ──
+  let hasFlawlessVictory = false;
+  fbEvents.forEach(event => {
+    const decidedMatches = event.matches.filter(m => m.winner);
+    if (decidedMatches.length < 7) return;
+    const playerPerfect = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`] === m.winner);
+    if (!playerPerfect) return;
+    const rankings = getEventRankings(event);
+    if (rankings.length > 0 && rankings[0].name === player.name) hasFlawlessVictory = true;
+  });
+  if (!hasFlawlessVictory) {
+    historicalEventNames.forEach(name => {
+      const total = historicalTotalMatches[name];
+      if (!total || total < 7) return;
+      const score = historicalScores[name]?.[player.name];
+      if (score !== total) return;
+      const sorted = Object.entries(historicalScores[name]).sort(([, a], [, b]) => b - a);
+      if (sorted[0][0] === player.name) hasFlawlessVictory = true;
+    });
+  }
+  if (hasFlawlessVictory) earned.push('flawless-victory');
+
+  // ── REVERSE SWEEP (dead last one event, 1st the next) ──
+  let hasReverseSweep = false;
+  for (let i = 1; i < allOrderedEvents.length; i++) {
+    const prevEvent = allOrderedEvents[i - 1];
+    const currEvent = allOrderedEvents[i];
+    const prevRankings = getEventRankings(prevEvent);
+    const currRankings = getEventRankings(currEvent);
+    const prevRank = prevRankings.findIndex(r => r.name === player.name);
+    const currRank = currRankings.findIndex(r => r.name === player.name);
+    if (prevRank === prevRankings.length - 1 && prevRankings.length >= 3 && currRank === 0) {
+      hasReverseSweep = true;
+    }
+  }
+  if (hasReverseSweep) earned.push('reverse-sweep');
+
+  // ── PHOENIX RISING (worst accuracy one event → best accuracy the next) ──
+  let hasPhoenixRising = false;
+  for (let i = 1; i < orderedFbEvents.length; i++) {
+    const prevEvent = orderedFbEvents[i - 1];
+    const currEvent = orderedFbEvents[i];
+    const getAccuracies = (event) => {
+      const decided = event.matches.filter(m => m.winner);
+      if (decided.length === 0) return [];
+      return allPlayers
+        .filter(p => Object.keys(p.picks || {}).some(k => k.startsWith(`${event.id}-`)))
+        .map(p => {
+          const correct = decided.filter(m => p.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+          return { name: p.name, accuracy: correct / decided.length };
+        })
+        .sort((a, b) => a.accuracy - b.accuracy);
+    };
+    const prevAcc = getAccuracies(prevEvent);
+    const currAcc = getAccuracies(currEvent);
+    if (prevAcc.length < 3 || currAcc.length < 3) continue;
+    const wasWorst = prevAcc[0].name === player.name;
+    const wasBest = currAcc[currAcc.length - 1].name === player.name;
+    if (wasWorst && wasBest) hasPhoenixRising = true;
+  }
+  if (hasPhoenixRising) earned.push('phoenix-rising');
+
+  // ── PLOT ARMOR (win event by exactly 1 point, 3 times) ──
+  let plotArmorCount = 0;
+  fbEvents.forEach(event => {
+    const rankings = getEventRankings(event);
+    if (rankings.length >= 2 && rankings[0].name === player.name && rankings[0].score - rankings[1].score === 1) {
+      plotArmorCount++;
+    }
+  });
+  historicalEventNames.forEach(name => {
+    const scores = historicalScores[name];
+    if (!scores || scores[player.name] === undefined) return;
+    const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
+    if (sorted.length >= 2 && sorted[0][0] === player.name && sorted[0][1] - sorted[1][1] === 1) {
+      plotArmorCount++;
+    }
+  });
+  if (plotArmorCount >= 3) earned.push('plot-armor');
+
+  // ── DÉJÀ VU (same picks as another player for 2 consecutive events) ──
+  let hasDejaVu = false;
+  if (orderedFbEvents.length >= 2) {
+    allPlayers.forEach(other => {
+      if (other.name === player.name) return;
+      for (let i = 1; i < orderedFbEvents.length; i++) {
+        const prevEvent = orderedFbEvents[i - 1];
+        const currEvent = orderedFbEvents[i];
+        const matchPicks = (event) => {
+          const keys = event.matches.map(m => `${event.id}-${m.id}`);
+          const myPicks = keys.map(k => player.picks?.[k]).filter(Boolean);
+          const theirPicks = keys.map(k => other.picks?.[k]).filter(Boolean);
+          if (myPicks.length < 2 || myPicks.length !== theirPicks.length) return false;
+          return keys.every(k => player.picks?.[k] && player.picks[k] === other.picks?.[k]);
+        };
+        if (matchPicks(prevEvent) && matchPicks(currEvent)) hasDejaVu = true;
+      }
+    });
+  }
+  if (hasDejaVu) earned.push('deja-vu');
+
+  // ── THE LONE WOLF (pick an option nobody else picked at all, and be right) ──
+  let hasLoneWolf = false;
+  fbEvents.forEach(event => {
+    event.matches.forEach(match => {
+      if (!match.winner) return;
+      const playerPick = player.picks?.[`${event.id}-${match.id}`];
+      if (playerPick !== match.winner) return;
+      // Check that no other player picked this same option (not just correctly — at all)
+      const othersPickedSame = allPlayers.some(p =>
+        p.name !== player.name && p.picks?.[`${event.id}-${match.id}`] === playerPick
+      );
+      if (!othersPickedSame) hasLoneWolf = true;
+    });
+  });
+  if (hasLoneWolf) earned.push('the-lone-wolf');
+
+  // ── SHADOW CHAMPION (2nd place in 5+ events) ──
+  if (secondPlaceCount >= 5) earned.push('shadow-champion');
+
   return earned;
 }
 
@@ -1566,6 +1844,60 @@ export function getPlayerBadges(player, allEvents, allPlayers) {
   // Check for The Collector meta-badge (20+ badges, not counting itself)
   if (allBadgeIds.length >= 20 && !allBadgeIds.includes('the-collector')) {
     allBadgeIds.push('the-collector');
+  }
+
+  // ── SECRET RARE META-BADGES ──
+
+  // Full Roster: at least one badge from every standard rarity tier
+  const badgeObjects = allBadgeIds.map(id => getBadgeById(id)).filter(Boolean);
+  const earnedRarities = new Set(badgeObjects.map(b => b.rarity));
+  const standardRarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+  if (standardRarities.every(r => earnedRarities.has(r)) && !allBadgeIds.includes('full-roster')) {
+    allBadgeIds.push('full-roster');
+  }
+
+  // The Completionist: all non-secret badges earned
+  const standardBadges = BADGE_DEFINITIONS.filter(b => b.rarity !== 'secret-rare');
+  const earnedStandard = standardBadges.filter(b => allBadgeIds.includes(b.id));
+  if (earnedStandard.length === standardBadges.length && !allBadgeIds.includes('the-completionist')) {
+    allBadgeIds.push('the-completionist');
+  }
+
+  // The Glitch: check if 3+ badges were first earned from a single event
+  // We approximate by checking if 3+ event-specific badges trigger from the same event
+  if (!allBadgeIds.includes('the-glitch')) {
+    const fbEvents = allEvents.filter(e =>
+      (e.status === 'completed' || e.status === 'live') && e.matches?.length > 0
+    );
+    for (const event of fbEvents) {
+      let badgesFromEvent = 0;
+      const decidedMatches = event.matches.filter(m => m.winner);
+      if (decidedMatches.length === 0) continue;
+      const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+      if (!hasPicks) continue;
+      const score = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+      const rankings = allPlayers
+        .filter(p => Object.keys(p.picks || {}).some(k => k.startsWith(`${event.id}-`)))
+        .map(p => ({ name: p.name, score: decidedMatches.filter(m => p.picks?.[`${event.id}-${m.id}`] === m.winner).length }))
+        .sort((a, b) => b.score - a.score);
+      const rank = rankings.findIndex(r => r.name === player.name);
+      // Check event-specific badge conditions
+      if (score === decidedMatches.length) badgesFromEvent++; // perfect-card
+      if (score === 0 && hasPicks) badgesFromEvent++; // wrong-place-wrong-time
+      if (rank === 0 && rankings.length > 0) badgesFromEvent++; // event win related
+      if (rank === rankings.length - 1 && rankings.length >= 2) badgesFromEvent++; // participation-trophy
+      if (decidedMatches.length >= 2 && decidedMatches.length % 2 === 0 && score === decidedMatches.length / 2) badgesFromEvent++; // split-decision
+      const wrong = decidedMatches.length - score;
+      if (wrong > score) badgesFromEvent++; // undercard
+      if (score >= 1) badgesFromEvent++; // on-the-board
+      // hat-trick check
+      let streak = 0;
+      event.matches.forEach(m => {
+        if (m.winner && player.picks?.[`${event.id}-${m.id}`] === m.winner) { streak++; } else if (m.winner) { streak = 0; }
+      });
+      if (streak >= 3) badgesFromEvent++;
+      if (badgesFromEvent >= 3) { allBadgeIds.push('the-glitch'); break; }
+    }
   }
 
   return allBadgeIds

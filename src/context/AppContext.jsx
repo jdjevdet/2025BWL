@@ -132,7 +132,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const handleAdminLogin = (password) => {
-    if (password === 'ssj') { setIsAdmin(true); setCurrentView('admin'); return true; }
+    if (password === 'ssj') { setIsAdmin(true); setMinimizedEvents(events.map(e => e.id)); setCurrentView('admin'); return true; }
     else { alert('Incorrect password'); return false; }
   };
 

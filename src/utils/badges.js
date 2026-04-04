@@ -1055,6 +1055,22 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       .sort((a, b) => b.score - a.score);
   };
 
+  // Helper: check if a player clearly won (no tie for 1st) from a rankings array
+  const isClearWin = (rankings, name) => {
+    if (rankings.length === 0) return false;
+    if (rankings[0].name !== name) return false;
+    if (rankings.length === 1) return true;
+    return rankings[0].score > rankings[1].score;
+  };
+
+  // Helper: check if a player clearly won from a historical sorted array [[name, score], ...]
+  const isClearWinHistorical = (sorted, name) => {
+    if (sorted.length === 0) return false;
+    if (sorted[0][0] !== name) return false;
+    if (sorted.length === 1) return true;
+    return sorted[0][1] > sorted[1][1];
+  };
+
   // Helper: get most-picked and least-picked option for a match
   const getPickPopularity = (event, match) => {
     const pickCounts = {};
@@ -1400,18 +1416,16 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   let totalEventWins = 0;
   fbEvents.forEach(event => {
     const rankings = getEventRankings(event);
-    if (rankings.length >= 2 && rankings[0].name === player.name) {
+    if (isClearWin(rankings, player.name)) {
       totalEventWins++;
-      if (rankings[0].score - rankings[1].score >= 3) hasDominator = true;
-    } else if (rankings.length === 1 && rankings[0].name === player.name) {
-      totalEventWins++;
+      if (rankings.length >= 2 && rankings[0].score - rankings[1].score >= 3) hasDominator = true;
     }
   });
   historicalEventNames.forEach(name => {
     const scores = historicalScores[name];
     if (!scores || scores[player.name] === undefined) return;
     const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
-    if (sorted[0][0] === player.name) {
+    if (isClearWinHistorical(sorted, player.name)) {
       totalEventWins++;
       if (sorted.length >= 2 && sorted[0][1] - sorted[1][1] >= 3) hasDominator = true;
     }
@@ -1506,7 +1520,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       const wasLowest = prevSorted.length >= 2 && prevSorted[prevSorted.length - 1][0] === player.name;
       if (wasLowest) {
         const currRankings = getEventRankings(currEvent);
-        if (currRankings.length > 0 && currRankings[0].name === player.name) {
+        if (isClearWin(currRankings, player.name)) {
           hasRivalSlayer = true;
         }
       }
@@ -1518,7 +1532,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   let fbWins = 0;
   fbEvents.forEach(event => {
     const rankings = getEventRankings(event);
-    if (rankings.length > 0 && rankings[0].name === player.name) fbWins++;
+    if (isClearWin(rankings, player.name)) fbWins++;
   });
   if (fbWins >= 3) earned.push('dynasty');
 
@@ -1546,10 +1560,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     const lastEvent = orderedFbEvents[orderedFbEvents.length - 1];
     const firstRankings = getEventRankings(firstEvent);
     const lastRankings = getEventRankings(lastEvent);
-    if (
-      firstRankings.length > 0 && firstRankings[0].name === player.name &&
-      lastRankings.length > 0 && lastRankings[0].name === player.name
-    ) {
+    if (isClearWin(firstRankings, player.name) && isClearWin(lastRankings, player.name)) {
       hasFinalBoss = true;
     }
   }
@@ -1575,7 +1586,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       }
     });
     const sorted = Object.entries(globalScores).sort(([, a], [, b]) => b - a);
-    if (sorted.length > 0 && sorted[0][0] === player.name) {
+    if (sorted.length >= 2 && sorted[0][0] === player.name && sorted[0][1] > sorted[1][1]) {
       globalStreak++;
       if (globalStreak >= 3) hasUntouchable = true;
     } else {
@@ -1866,7 +1877,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   fbEvents.forEach(event => {
     if (event.matches.length < 10) return;
     const rankings = getEventRankings(event);
-    if (rankings.length > 0 && rankings[0].name === player.name) hasUndertaker = true;
+    if (isClearWin(rankings, player.name)) hasUndertaker = true;
   });
   if (!hasUndertaker) {
     historicalEventNames.forEach(name => {
@@ -1875,7 +1886,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       const scores = historicalScores[name];
       if (!scores || scores[player.name] === undefined) return;
       const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
-      if (sorted[0][0] === player.name) hasUndertaker = true;
+      if (isClearWinHistorical(sorted, player.name)) hasUndertaker = true;
     });
   }
   if (hasUndertaker) earned.push('the-undertaker');
@@ -2181,7 +2192,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   let hasTerminator = false;
   allOrderedEvents.forEach(event => {
     const rankings = getEventRankings(event);
-    if (rankings.length > 0 && rankings[0].name === player.name) {
+    if (isClearWin(rankings, player.name)) {
       winStreak++;
       if (winStreak >= 2) hasJordan = true;
       if (winStreak >= 3) hasTerminator = true;
@@ -2256,7 +2267,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
         cumulativeWTW[p.name] = (cumulativeWTW[p.name] || 0) + getEventScore(p, event);
       });
       const sorted = Object.entries(cumulativeWTW).sort(([, a], [, b]) => b - a);
-      if (sorted.length === 0 || sorted[0][0] !== player.name) ledEveryStep = false;
+      if (sorted.length < 2 || sorted[0][0] !== player.name || sorted[0][1] === sorted[1][1]) ledEveryStep = false;
     });
     if (ledEveryStep) hasWireToWire = true;
   }
@@ -2352,7 +2363,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     const playerPerfect = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`] === m.winner);
     if (!playerPerfect) return;
     const rankings = getEventRankings(event);
-    if (rankings.length > 0 && rankings[0].name === player.name) hasFlawlessVictory = true;
+    if (isClearWin(rankings, player.name)) hasFlawlessVictory = true;
   });
   if (!hasFlawlessVictory) {
     historicalEventNames.forEach(name => {
@@ -2361,7 +2372,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
       const score = historicalScores[name]?.[player.name];
       if (score !== total) return;
       const sorted = Object.entries(historicalScores[name]).sort(([, a], [, b]) => b - a);
-      if (sorted[0][0] === player.name) hasFlawlessVictory = true;
+      if (isClearWinHistorical(sorted, player.name)) hasFlawlessVictory = true;
     });
   }
   if (hasFlawlessVictory) earned.push('flawless-victory');

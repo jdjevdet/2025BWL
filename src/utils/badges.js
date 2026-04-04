@@ -950,3 +950,40 @@ export function getPlayerBadges(player, allEvents, allPlayers) {
     .filter(Boolean)
     .sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity));
 }
+
+/* Temporary debug function — call from browser console or profile view */
+export function debugBadges(player, allEvents, allPlayers) {
+  if (!player) { console.log('No player'); return; }
+  console.log('=== BADGE DEBUG FOR:', player.name, '===');
+  console.log('Player picks:', JSON.stringify(player.picks, null, 2));
+
+  const fbEvents = allEvents.filter(e =>
+    (e.status === 'completed' || e.status === 'live') &&
+    e.matches && e.matches.length > 0
+  );
+
+  console.log(`Total events passed in: ${allEvents.length}`);
+  console.log(`Events with status completed/live + matches: ${fbEvents.length}`);
+  console.log('All event statuses:', allEvents.map(e => ({ name: e.name, status: e.status, matchCount: e.matches?.length || 0 })));
+
+  fbEvents.forEach(event => {
+    const decidedMatches = event.matches.filter(m => m.winner);
+    console.log(`\n--- ${event.name} (id: ${event.id}, status: ${event.status}) ---`);
+    console.log(`Total matches: ${event.matches.length}, Decided: ${decidedMatches.length}`);
+    event.matches.forEach(m => {
+      const pickKey = `${event.id}-${m.id}`;
+      const pick = player.picks?.[pickKey];
+      const correct = pick && m.winner && pick === m.winner;
+      console.log(`  Match: "${m.title}" | Winner: "${m.winner || 'TBD'}" | Pick key: "${pickKey}" | Player pick: "${pick || 'NONE'}" | ${m.winner ? (correct ? 'CORRECT' : 'WRONG') : 'PENDING'}`);
+    });
+    if (decidedMatches.length > 0) {
+      const pickedAll = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`]);
+      const correctCount = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+      console.log(`  => Picked all decided: ${pickedAll}, Correct: ${correctCount}/${decidedMatches.length}, Perfect: ${correctCount === decidedMatches.length}`);
+    }
+  });
+
+  const earned = calculateEarnedBadges(player, allEvents, allPlayers);
+  console.log('\nAuto-earned badge IDs:', earned);
+  console.log('Manual badges:', player.manualBadges || []);
+}

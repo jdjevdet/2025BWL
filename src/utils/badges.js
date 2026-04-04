@@ -707,15 +707,6 @@ export const BADGE_DEFINITIONS = [
     autoEarn: true,
   },
   {
-    id: 'the-glitch',
-    name: 'The Glitch',
-    description: 'Earn 3 or more new badges from a single event.',
-    flavor: '"ERROR: Too many achievements unlocked simultaneously."',
-    rarity: 'secret-rare',
-    icon: 'Zap',
-    autoEarn: true,
-  },
-  {
     id: 'the-chosen-one',
     name: 'The Chosen One',
     description: 'Win both Mr. Predictamania and the BWL regular season in the same year.',
@@ -725,6 +716,8 @@ export const BADGE_DEFINITIONS = [
     autoEarn: false,
   },
 ];
+
+export const STANDARD_BADGE_COUNT = BADGE_DEFINITIONS.filter(b => b.rarity !== 'secret-rare').length;
 
 export const getBadgeById = (id) => BADGE_DEFINITIONS.find(b => b.id === id);
 
@@ -1861,43 +1854,6 @@ export function getPlayerBadges(player, allEvents, allPlayers) {
   const earnedStandard = standardBadges.filter(b => allBadgeIds.includes(b.id));
   if (earnedStandard.length === standardBadges.length && !allBadgeIds.includes('the-completionist')) {
     allBadgeIds.push('the-completionist');
-  }
-
-  // The Glitch: check if 3+ badges were first earned from a single event
-  // We approximate by checking if 3+ event-specific badges trigger from the same event
-  if (!allBadgeIds.includes('the-glitch')) {
-    const fbEvents = allEvents.filter(e =>
-      (e.status === 'completed' || e.status === 'live') && e.matches?.length > 0
-    );
-    for (const event of fbEvents) {
-      let badgesFromEvent = 0;
-      const decidedMatches = event.matches.filter(m => m.winner);
-      if (decidedMatches.length === 0) continue;
-      const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
-      if (!hasPicks) continue;
-      const score = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
-      const rankings = allPlayers
-        .filter(p => Object.keys(p.picks || {}).some(k => k.startsWith(`${event.id}-`)))
-        .map(p => ({ name: p.name, score: decidedMatches.filter(m => p.picks?.[`${event.id}-${m.id}`] === m.winner).length }))
-        .sort((a, b) => b.score - a.score);
-      const rank = rankings.findIndex(r => r.name === player.name);
-      // Check event-specific badge conditions
-      if (score === decidedMatches.length) badgesFromEvent++; // perfect-card
-      if (score === 0 && hasPicks) badgesFromEvent++; // wrong-place-wrong-time
-      if (rank === 0 && rankings.length > 0) badgesFromEvent++; // event win related
-      if (rank === rankings.length - 1 && rankings.length >= 2) badgesFromEvent++; // participation-trophy
-      if (decidedMatches.length >= 2 && decidedMatches.length % 2 === 0 && score === decidedMatches.length / 2) badgesFromEvent++; // split-decision
-      const wrong = decidedMatches.length - score;
-      if (wrong > score) badgesFromEvent++; // undercard
-      if (score >= 1) badgesFromEvent++; // on-the-board
-      // hat-trick check
-      let streak = 0;
-      event.matches.forEach(m => {
-        if (m.winner && player.picks?.[`${event.id}-${m.id}`] === m.winner) { streak++; } else if (m.winner) { streak = 0; }
-      });
-      if (streak >= 3) badgesFromEvent++;
-      if (badgesFromEvent >= 3) { allBadgeIds.push('the-glitch'); break; }
-    }
   }
 
   return allBadgeIds

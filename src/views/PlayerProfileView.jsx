@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronRight, Calendar, Trophy, TrendingUp, Target, Swords, Hash } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calculateTotalPoints, getPlayerBreakdown, historicalScores, historicalEventNames } from '../utils/scoring';
-import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS } from '../utils/badges';
+import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, STANDARD_BADGE_COUNT } from '../utils/badges';
 import PlayerAvatar from '../components/PlayerAvatar';
 import BadgeCard from '../components/BadgeCard';
 import BadgeModal from '../components/BadgeModal';
@@ -80,6 +80,9 @@ const PlayerProfileView = () => {
     });
     return isWinner && playerScore > 0;
   }).length;
+
+  // Count only standard (non-secret) badges for the displayed total
+  const standardBadgeCount = badges.filter(b => b.rarity !== 'secret-rare').length;
 
   // Group badges by rarity
   const badgesByRarity = RARITY_ORDER.reduce((acc, rarity) => {
@@ -175,7 +178,7 @@ const PlayerProfileView = () => {
                 { label: 'Events', value: eventsPlayed, icon: Calendar },
                 { label: 'Event Wins', value: eventWins, icon: Trophy },
                 { label: 'Correct Picks', value: totalCorrect, icon: Target },
-                { label: 'Badges', value: `${badges.length}/${BADGE_DEFINITIONS.length}`, icon: Swords },
+                { label: 'Badges', value: `${standardBadgeCount}/${STANDARD_BADGE_COUNT}`, icon: Swords },
               ].map((stat, i) => (
                 <div
                   key={i}
@@ -200,22 +203,22 @@ const PlayerProfileView = () => {
             <div className="flex-1">
               <div className="flex items-baseline gap-2">
                 <h2 className="font-bebas text-3xl tracking-wide text-white">Achievements</h2>
-                <span className="font-bebas text-xl tracking-wide text-[--gold]">{badges.length}/{BADGE_DEFINITIONS.length}</span>
+                <span className="font-bebas text-xl tracking-wide text-[--gold]">{standardBadgeCount}/{STANDARD_BADGE_COUNT}</span>
               </div>
               <div className="flex items-center gap-3 mt-1.5">
                 <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-1000 ease-out"
                     style={{
-                      width: `${Math.round((badges.length / BADGE_DEFINITIONS.length) * 100)}%`,
-                      background: badges.length === BADGE_DEFINITIONS.length
+                      width: `${Math.round((standardBadgeCount / STANDARD_BADGE_COUNT) * 100)}%`,
+                      background: standardBadgeCount === STANDARD_BADGE_COUNT
                         ? 'var(--emerald)'
                         : 'linear-gradient(90deg, var(--gold-dark), var(--gold))',
                     }}
                   />
                 </div>
                 <span className="text-[10px] text-[--text-muted] font-medium tabular-nums whitespace-nowrap">
-                  {Math.round((badges.length / BADGE_DEFINITIONS.length) * 100)}%
+                  {Math.round((standardBadgeCount / STANDARD_BADGE_COUNT) * 100)}%
                 </span>
               </div>
             </div>

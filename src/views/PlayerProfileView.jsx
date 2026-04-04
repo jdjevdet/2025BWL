@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronRight, Calendar, Trophy, TrendingUp, Target, Swords, Hash } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calculateTotalPoints, getPlayerBreakdown, historicalScores, historicalEventNames } from '../utils/scoring';
-import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, debugBadges } from '../utils/badges';
+import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS } from '../utils/badges';
 import PlayerAvatar from '../components/PlayerAvatar';
 import BadgeCard from '../components/BadgeCard';
 import BadgeModal from '../components/BadgeModal';
@@ -31,9 +31,6 @@ const PlayerProfileView = () => {
   const totalPoints = calculateTotalPoints(player, sortedEvents);
   const breakdown = getPlayerBreakdown(player, sortedEvents);
   const badges = getPlayerBadges(player, events, players);
-
-  // Temporary debug — check browser console on any player profile
-  debugBadges(player, events, players);
 
   // Calculate rank
   const allPlayerNames = useMemo(() => {

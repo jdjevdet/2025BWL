@@ -1,4 +1,4 @@
-import { historicalScores, historicalEventNames, calculateTotalPoints, getPlayerBreakdown } from './scoring';
+import { historicalScores, historicalEventNames, historicalTotalMatches, calculateTotalPoints, getPlayerBreakdown } from './scoring';
 
 /* ══════════════════════════════════════════════
    BADGE DEFINITIONS
@@ -510,6 +510,14 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     const pickCount = event.matches.filter(m => player.picks?.[`${event.id}-${m.id}`]).length;
     if (pickCount >= event.matches.length) hasFullCard = true;
   });
+  // Historical: if player score equals total matches, they got a full card
+  if (!hasFullCard) {
+    historicalEventNames.forEach(name => {
+      const score = historicalScores[name]?.[player.name];
+      const total = historicalTotalMatches[name];
+      if (score !== undefined && total && score === total) hasFullCard = true;
+    });
+  }
   if (hasFullCard) earned.push('full-card');
 
   // ── ON THE BOARD ──
@@ -529,13 +537,23 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   fbEvents.forEach(event => {
     const decidedMatches = event.matches.filter(m => m.winner);
     if (decidedMatches.length === 0) return;
-    // Only count matches where the player actually made a pick
     const pickedDecided = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`]);
     if (pickedDecided.length === 0) return;
     const correct = pickedDecided.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
     const wrong = pickedDecided.length - correct;
     if (wrong > correct) hasUndercard = true;
   });
+  // Historical: check if wrong > correct
+  if (!hasUndercard) {
+    historicalEventNames.forEach(name => {
+      const score = historicalScores[name]?.[player.name];
+      const total = historicalTotalMatches[name];
+      if (score !== undefined && total) {
+        const wrong = total - score;
+        if (wrong > score) hasUndercard = true;
+      }
+    });
+  }
   if (hasUndercard) earned.push('undercard');
 
   // ── BANDWAGON FAN (pick same as every other player who picked in a match) ──
@@ -563,6 +581,16 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     const correct = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
     if (correct === decidedMatches.length / 2) hasSplitDecision = true;
   });
+  // Historical: check if score === totalMatches / 2
+  if (!hasSplitDecision) {
+    historicalEventNames.forEach(name => {
+      const score = historicalScores[name]?.[player.name];
+      const total = historicalTotalMatches[name];
+      if (score !== undefined && total && total >= 2 && total % 2 === 0 && score === total / 2) {
+        hasSplitDecision = true;
+      }
+    });
+  }
   if (hasSplitDecision) earned.push('split-decision');
 
   // ── HAT TRICK (3 correct in a row within an event) ──
@@ -726,6 +754,12 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     ).length;
     if (correctPicks === decidedMatches.length) perfectCardCount++;
   });
+  // Historical: score === totalMatches means perfect card
+  historicalEventNames.forEach(name => {
+    const score = historicalScores[name]?.[player.name];
+    const total = historicalTotalMatches[name];
+    if (score !== undefined && total && score === total) perfectCardCount++;
+  });
   if (perfectCardCount >= 1) earned.push('perfect-card');
   if (perfectCardCount >= 2) earned.push('the-oracle');
 
@@ -737,6 +771,16 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     const correct = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
     if (correct === decidedMatches.length - 1) hasNearPerfect = true;
   });
+  // Historical: score === totalMatches - 1, and totalMatches >= 6
+  if (!hasNearPerfect) {
+    historicalEventNames.forEach(name => {
+      const score = historicalScores[name]?.[player.name];
+      const total = historicalTotalMatches[name];
+      if (score !== undefined && total && total >= 6 && score === total - 1) {
+        hasNearPerfect = true;
+      }
+    });
+  }
   if (hasNearPerfect) earned.push('near-perfect');
 
   // ── STREAK MASTER (top 3 in 3 consecutive events) ──
@@ -951,39 +995,3 @@ export function getPlayerBadges(player, allEvents, allPlayers) {
     .sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity));
 }
 
-/* Temporary debug function — call from browser console or profile view */
-export function debugBadges(player, allEvents, allPlayers) {
-  if (!player) { console.log('No player'); return; }
-  console.log('=== BADGE DEBUG FOR:', player.name, '===');
-  console.log('Player picks:', JSON.stringify(player.picks, null, 2));
-
-  const fbEvents = allEvents.filter(e =>
-    (e.status === 'completed' || e.status === 'live') &&
-    e.matches && e.matches.length > 0
-  );
-
-  console.log(`Total events passed in: ${allEvents.length}`);
-  console.log(`Events with status completed/live + matches: ${fbEvents.length}`);
-  console.log('All event statuses:', allEvents.map(e => ({ name: e.name, status: e.status, matchCount: e.matches?.length || 0 })));
-
-  fbEvents.forEach(event => {
-    const decidedMatches = event.matches.filter(m => m.winner);
-    console.log(`\n--- ${event.name} (id: ${event.id}, status: ${event.status}) ---`);
-    console.log(`Total matches: ${event.matches.length}, Decided: ${decidedMatches.length}`);
-    event.matches.forEach(m => {
-      const pickKey = `${event.id}-${m.id}`;
-      const pick = player.picks?.[pickKey];
-      const correct = pick && m.winner && pick === m.winner;
-      console.log(`  Match: "${m.title}" | Winner: "${m.winner || 'TBD'}" | Pick key: "${pickKey}" | Player pick: "${pick || 'NONE'}" | ${m.winner ? (correct ? 'CORRECT' : 'WRONG') : 'PENDING'}`);
-    });
-    if (decidedMatches.length > 0) {
-      const pickedAll = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`]);
-      const correctCount = decidedMatches.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
-      console.log(`  => Picked all decided: ${pickedAll}, Correct: ${correctCount}/${decidedMatches.length}, Perfect: ${correctCount === decidedMatches.length}`);
-    }
-  });
-
-  const earned = calculateEarnedBadges(player, allEvents, allPlayers);
-  console.log('\nAuto-earned badge IDs:', earned);
-  console.log('Manual badges:', player.manualBadges || []);
-}

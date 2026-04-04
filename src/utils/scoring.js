@@ -8,6 +8,16 @@ export const historicalScores = {
   'CROWN JEWEL': { 'Derick': 5, 'Johnny': 4, 'Erik': 4, 'George': 4, 'Albert': 4, 'Matt': 3, 'Rob': 2, 'Jordan': 0, 'Jaydan': 0, 'Marcus': 0 }
 };
 
+export const historicalTotalMatches = {
+  'BACKLASH': 5,
+  'MONEY IN THE BANK': 4,
+  'NIGHT OF CHAMPIONS': 6,
+  'SUMMERSLAM': 13,
+  'CLASH IN PARIS': 6,
+  'WRESTLEPALOOZA': 4,
+  'CROWN JEWEL': 5,
+};
+
 export const historicalEventNames = Object.keys(historicalScores);
 
 export const calculateTotalPoints = (player, allEvents) => {

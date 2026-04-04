@@ -14,8 +14,8 @@ export const AppProvider = ({ children }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [minimizedEvents, setMinimizedEvents] = useState([]);
-  const [isPlayerManagementMinimized, setIsPlayerManagementMinimized] = useState(false);
-  const [isHallOfFameMinimized, setIsHallOfFameMinimized] = useState(false);
+  const [isPlayerManagementMinimized, setIsPlayerManagementMinimized] = useState(true);
+  const [isHallOfFameMinimized, setIsHallOfFameMinimized] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [authenticatedPlayerId, setAuthenticatedPlayerId] = useState(null);

@@ -773,6 +773,36 @@ input:focus, select:focus, textarea:focus {
 .badge-sparkles span:nth-child(5) { top: 50%; left: 5%; animation: badgeSparkle 2.8s 0.7s infinite; }
 .badge-sparkles span:nth-child(6) { top: 50%; right: 5%; animation: badgeSparkle 2s 1.2s infinite; }
 
+/* ═══════════════════════════════════════════
+   HALL OF FAME
+   ═══════════════════════════════════════════ */
+
+.hof-bg {
+  background:
+    radial-gradient(ellipse 70% 40% at 50% -5%, rgba(201, 168, 76, 0.1), transparent),
+    radial-gradient(ellipse 50% 30% at 20% 50%, rgba(201, 168, 76, 0.03), transparent),
+    radial-gradient(ellipse 50% 30% at 80% 50%, rgba(201, 168, 76, 0.03), transparent),
+    var(--bg-deep);
+}
+
+.hof-icon-predictamania {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  color: #0a0a0a;
+  box-shadow: 0 0 30px rgba(201, 168, 76, 0.25), 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.hof-icon-regular {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: var(--gold);
+  border: 1px solid var(--gold-dark);
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.1), 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.hof-image-frame {
+  border: 2px solid var(--gold-dark);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(201, 168, 76, 0.08);
+}
+
 /* Profile hero gradient */
 .profile-hero-bg {
   background:

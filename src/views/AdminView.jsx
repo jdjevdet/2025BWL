@@ -595,7 +595,8 @@ const HallOfFameManagement = () => {
     hallOfFameEntries, isHallOfFameMinimized, setIsHallOfFameMinimized,
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
   } = useApp();
-  const [newEntry, setNewEntry] = useState({ title: '', description: '', imageFile: null, imageUrl: '' });
+  const emptyEntry = { title: '', description: '', category: 'mr-predictamania', season: '2025/2026', imageFile: null, imageUrl: '' };
+  const [newEntry, setNewEntry] = useState(emptyEntry);
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [localEditingData, setLocalEditingData] = useState(null);
 
@@ -618,10 +619,17 @@ const HallOfFameManagement = () => {
   const handleAddOrUpdate = () => {
     if (editingEntryId) { updateHallOfFameEntry(editingEntryId, localEditingData); setEditingEntryId(null); }
     else {
-      if (newEntry.title && newEntry.imageFile) { addHallOfFameEntry(newEntry); setNewEntry({ title: '', description: '', imageFile: null, imageUrl: '' }); }
+      if (newEntry.title && newEntry.imageFile) { addHallOfFameEntry(newEntry); setNewEntry({ ...emptyEntry }); }
       else alert('Please provide a title and image.');
     }
   };
+
+  const currentData = editingEntryId ? localEditingData : newEntry;
+  const setCurrentData = editingEntryId
+    ? (fn) => setLocalEditingData(prev => typeof fn === 'function' ? fn(prev) : fn)
+    : (fn) => setNewEntry(prev => typeof fn === 'function' ? fn(prev) : fn);
+
+  const categoryLabels = { 'mr-predictamania': 'Mr. Predictamania', 'bwl-regular-season': 'BWL Regular Season' };
 
   return (
     <div className="mt-6 rounded-xl border border-[--border] card-gold-accent" style={{ background: 'var(--bg-surface)' }}>
@@ -643,29 +651,55 @@ const HallOfFameManagement = () => {
         <div className="p-5">
           <div className="p-4 rounded-lg border border-[--border] mb-5" style={{ background: 'var(--bg-elevated)' }}>
             <h4 className="text-xs font-bold uppercase tracking-widest text-[--text-muted] mb-3">
-              {editingEntryId ? 'Edit Entry' : 'Add New Entry'}
+              {editingEntryId ? 'Edit Inductee' : 'Add New Inductee'}
             </h4>
             <input
               type="text"
-              placeholder="Title (e.g., 2025 Mr. Predictamania | Johnny)"
-              value={editingEntryId ? (localEditingData?.title || '') : newEntry.title}
-              onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, title: e.target.value })) : setNewEntry(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Winner name (e.g., Johnny)"
+              value={currentData?.title || ''}
+              onChange={(e) => setCurrentData(prev => ({ ...prev, title: e.target.value }))}
               className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] mb-2 transition-all"
               style={{ background: 'var(--bg-input)' }}
             />
             <textarea
               placeholder="Description (optional)"
-              value={editingEntryId ? (localEditingData?.description || '') : newEntry.description}
-              onChange={(e) => editingEntryId ? setLocalEditingData(prev => ({ ...prev, description: e.target.value })) : setNewEntry(prev => ({ ...prev, description: e.target.value }))}
+              value={currentData?.description || ''}
+              onChange={(e) => setCurrentData(prev => ({ ...prev, description: e.target.value }))}
               rows="2"
               className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] mb-2 resize-y transition-all"
               style={{ background: 'var(--bg-input)' }}
             />
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div>
+                <label className="block text-[10px] text-[--text-muted] uppercase tracking-wider mb-1 font-medium">Category</label>
+                <select
+                  value={currentData?.category || 'mr-predictamania'}
+                  onChange={(e) => setCurrentData(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all appearance-none"
+                  style={{ background: 'var(--bg-input)' }}
+                >
+                  <option value="mr-predictamania">Mr. Predictamania</option>
+                  <option value="bwl-regular-season">BWL Regular Season</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-[--text-muted] uppercase tracking-wider mb-1 font-medium">Season</label>
+                <select
+                  value={currentData?.season || '2025/2026'}
+                  onChange={(e) => setCurrentData(prev => ({ ...prev, season: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all appearance-none"
+                  style={{ background: 'var(--bg-input)' }}
+                >
+                  <option value="2025/2026">Season 2025/2026</option>
+                  <option value="2026/2027">Season 2026/2027</option>
+                </select>
+              </div>
+            </div>
             <label className="block border-2 border-dashed border-[--border-light] rounded-lg p-4 text-center cursor-pointer hover:border-[--gold-dark] transition-all mb-3">
               <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              {(editingEntryId ? localEditingData?.imageUrl : newEntry.imageUrl) ? (
+              {(currentData?.imageUrl) ? (
                 <div>
-                  <img src={editingEntryId ? localEditingData.imageUrl : newEntry.imageUrl} alt="Preview" className="w-full h-28 object-cover rounded-md mb-2" />
+                  <img src={currentData.imageUrl} alt="Preview" className="w-full h-28 object-cover rounded-md mb-2" />
                   <p className="text-xs text-[--text-muted]">Click to change image</p>
                 </div>
               ) : (
@@ -674,7 +708,7 @@ const HallOfFameManagement = () => {
             </label>
             <div className="flex gap-2">
               <button onClick={handleAddOrUpdate} className="flex-1 btn-gold py-2.5 rounded-lg text-sm font-bold">
-                {editingEntryId ? 'Save Changes' : 'Add Entry'}
+                {editingEntryId ? 'Save Changes' : 'Add Inductee'}
               </button>
               {editingEntryId && (
                 <button
@@ -690,7 +724,7 @@ const HallOfFameManagement = () => {
 
           <div className="space-y-2">
             {hallOfFameEntries.length === 0 ? (
-              <p className="text-[--text-muted] text-center py-8 text-sm">No entries yet.</p>
+              <p className="text-[--text-muted] text-center py-8 text-sm">No inductees yet.</p>
             ) : (
               hallOfFameEntries.map((entry) => (
                 <div
@@ -701,8 +735,22 @@ const HallOfFameManagement = () => {
                   <div className="flex items-center gap-3 min-w-0">
                     {entry.imageUrl && <img src={entry.imageUrl} alt={entry.title} className="w-10 h-10 object-cover rounded-lg border border-[--border] flex-shrink-0" />}
                     <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{entry.title}</p>
-                      {entry.description && <p className="text-[--text-muted] text-xs truncate">{entry.description}</p>}
+                      <div className="flex items-center gap-2">
+                        <p className="text-white text-sm font-medium truncate">{entry.title}</p>
+                        {entry.season && <span className="text-[10px] text-[--text-muted] flex-shrink-0">{entry.season}</span>}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          entry.category === 'mr-predictamania'
+                            ? 'text-[--gold] bg-[--gold]/5 border border-[--gold-dark]/20'
+                            : entry.category === 'bwl-regular-season'
+                            ? 'text-slate-300 bg-slate-500/5 border border-slate-500/20'
+                            : 'text-[--text-muted]'
+                        }`}>
+                          {categoryLabels[entry.category] || 'Uncategorized'}
+                        </span>
+                        {entry.description && <p className="text-[--text-muted] text-xs truncate">{entry.description}</p>}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0 ml-3">

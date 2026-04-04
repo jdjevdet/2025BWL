@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronRight, Calendar, Trophy, TrendingUp, Target, Swords, Hash } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calculateTotalPoints, getPlayerBreakdown, historicalScores, historicalEventNames } from '../utils/scoring';
-import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, isBadgeNew } from '../utils/badges';
+import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, syncBadgeTimestamps, isBadgeNew } from '../utils/badges';
 import PlayerAvatar from '../components/PlayerAvatar';
 import BadgeCard from '../components/BadgeCard';
 import BadgeModal from '../components/BadgeModal';
@@ -31,6 +31,9 @@ const PlayerProfileView = () => {
   const totalPoints = calculateTotalPoints(player, sortedEvents);
   const breakdown = getPlayerBreakdown(player, sortedEvents);
   const badges = getPlayerBadges(player, events, players);
+
+  // Sync badge timestamps in localStorage (first call backfills with 0, future badges get Date.now())
+  syncBadgeTimestamps(player.name, badges.map(b => b.id));
 
   // Calculate rank
   const allPlayerNames = useMemo(() => {
@@ -159,7 +162,7 @@ const PlayerProfileView = () => {
                 {badges.length > 0 && (
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
                     {badges.slice(0, 8).map(badge => (
-                      <BadgeCard key={badge.id} badge={badge} size="sm" isNew={isBadgeNew(player, badge.id)} onClick={() => setSelectedBadge(badge)} />
+                      <BadgeCard key={badge.id} badge={badge} size="sm" isNew={isBadgeNew(player.name, badge.id)} onClick={() => setSelectedBadge(badge)} />
                     ))}
                     {badges.length > 8 && (
                       <span className="text-xs text-[--text-muted] font-medium ml-1">+{badges.length - 8} more</span>
@@ -225,7 +228,7 @@ const PlayerProfileView = () => {
                     key={badge.id}
                     badge={badge}
                     size="md"
-                    isNew={isBadgeNew(player, badge.id)}
+                    isNew={isBadgeNew(player.name, badge.id)}
                     onClick={() => setSelectedBadge(badge)}
                   />
                 ))}

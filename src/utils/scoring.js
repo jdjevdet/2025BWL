@@ -54,6 +54,9 @@ export const getPlayerBreakdown = (player, allEvents) => {
   allEvents.forEach(event => {
     if (!historicalEventNames.includes(event.name.toUpperCase())) {
       if ((event.status === 'completed' || event.status === 'live') && event.matches) {
+        const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+        const isSubmitted = event.submittedPlayers?.includes(player.name);
+        if (!hasPicks && !isSubmitted) return;
         let score = 0;
         event.matches.forEach(match => {
           const pickKey = `${event.id}-${match.id}`;

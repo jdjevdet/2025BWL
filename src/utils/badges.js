@@ -1439,6 +1439,9 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   if (player.name !== 'Derick') {
     let hasDericksFather = false;
     fbEvents.forEach(event => {
+      const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+      const isSubmitted = event.submittedPlayers?.includes(player.name);
+      if (!hasPicks && !isSubmitted) return;
       const playerScore = getEventScore(player, event);
       const derickPlayer = allPlayers.find(p => p.name === 'Derick');
       if (derickPlayer) {
@@ -1753,6 +1756,9 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   if (player.name !== 'Derick') {
     let hasDericksSon = false;
     fbEvents.forEach(event => {
+      const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+      const isSubmitted = event.submittedPlayers?.includes(player.name);
+      if (!hasPicks && !isSubmitted) return;
       const derickPlayer = allPlayers.find(p => p.name === 'Derick');
       if (derickPlayer) {
         const derickScore = getEventScore(derickPlayer, event);

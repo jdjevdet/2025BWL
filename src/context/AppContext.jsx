@@ -26,6 +26,7 @@ export const AppProvider = ({ children }) => {
   const [players, setPlayers] = useState([]);
   const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [selectedSeason, setSelectedSeason] = useState('2025/2026');
 
   // Firebase subscriptions
   useEffect(() => {
@@ -41,7 +42,7 @@ export const AppProvider = ({ children }) => {
     return () => { unsubscribeEvents(); unsubscribePlayers(); unsubscribeHoF(); };
   }, []);
 
-  const sortedEvents = useMemo(() => [...events].sort((a, b) => {
+  const allSortedEvents = useMemo(() => [...events].sort((a, b) => {
     const dateA = new Date(a.date);
     const dateB = new Date(b.date);
     const validA = !isNaN(dateA);
@@ -51,6 +52,10 @@ export const AppProvider = ({ children }) => {
     if (!validB) return -1;
     return dateA - dateB;
   }), [events]);
+
+  const sortedEvents = useMemo(() =>
+    allSortedEvents.filter(e => (e.season || '2025/2026') === selectedSeason),
+    [allSortedEvents, selectedSeason]);
 
   // Auto-transition open events past deadline to live
   const eventsRef = useRef(events);
@@ -133,7 +138,7 @@ export const AppProvider = ({ children }) => {
 
   const createNewEvent = async () => {
     try {
-      const docRef = await addDoc(collection(db, "events"), { name: 'NEW EVENT', date: 'TBD', status: 'upcoming', bannerImage: null, matches: [], submittedPlayers: [] });
+      const docRef = await addDoc(collection(db, "events"), { name: 'NEW EVENT', date: 'TBD', status: 'upcoming', season: selectedSeason, bannerImage: null, matches: [], submittedPlayers: [] });
       setEditingEvent(docRef.id);
     } catch (error) {
       console.error("Error creating new event:", error);
@@ -327,7 +332,8 @@ export const AppProvider = ({ children }) => {
     isMenuOpen, setIsMenuOpen,
     authenticatedPlayerId, setAuthenticatedPlayerId,
     avatarUploading, setAvatarUploading,
-    events, players, hallOfFameEntries, sortedEvents,
+    events, players, hallOfFameEntries, sortedEvents, allSortedEvents,
+    selectedSeason, setSelectedSeason,
     editingEvent, setEditingEvent,
     handlePicksSubmitted, resetPlayerPick, resetAllPlayerPicks,
     handleAdminLogin, createNewEvent, updateEvent, deleteEvent,

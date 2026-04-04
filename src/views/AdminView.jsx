@@ -182,6 +182,15 @@ const EventEditorCard = ({
                 <option value="live">Live</option>
                 <option value="completed">Completed</option>
               </select>
+              <select
+                value={localData.season || '2025/2026'}
+                onChange={(e) => setLocalData({ ...localData, season: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all appearance-none"
+                style={{ background: 'var(--bg-input)' }}
+              >
+                <option value="2025/2026">Season 2025/2026</option>
+                <option value="2026/2027">Season 2026/2027</option>
+              </select>
               <label className="block border-2 border-dashed border-[--border-light] rounded-lg p-4 text-center cursor-pointer hover:border-[--gold-dark] transition-all">
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 {localData.bannerImage ? (
@@ -718,9 +727,9 @@ const HallOfFameManagement = () => {
    ────────────────────────────────────────────── */
 const AdminView = () => {
   const {
-    sortedEvents, players, editingEvent, setEditingEvent, minimizedEvents, toggleMinimizeEvent,
+    sortedEvents, allSortedEvents, players, editingEvent, setEditingEvent, minimizedEvents, toggleMinimizeEvent,
     createNewEvent, updateEvent, deleteEvent, addMatch, addOptionToMatch,
-    resetPlayerPick, resetAllPlayerPicks,
+    resetPlayerPick, resetAllPlayerPicks, selectedSeason, setSelectedSeason,
   } = useApp();
 
   return (
@@ -741,6 +750,23 @@ const AdminView = () => {
             <Plus className="w-4 h-4" />
             New Event
           </button>
+        </div>
+
+        <div className="flex items-center gap-2 mb-6">
+          {['2025/2026', '2026/2027'].map(season => (
+            <button
+              key={season}
+              onClick={() => setSelectedSeason(season)}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                selectedSeason === season
+                  ? 'btn-gold'
+                  : 'border border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--gold-dark]'
+              }`}
+              style={selectedSeason !== season ? { background: 'var(--bg-elevated)' } : undefined}
+            >
+              Season {season}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-4">

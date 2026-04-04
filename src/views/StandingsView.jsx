@@ -5,7 +5,7 @@ import { calculateTotalPoints, getPlayerBreakdown, historicalScores } from '../u
 import PlayerAvatar from '../components/PlayerAvatar';
 
 const StandingsView = () => {
-  const { players, sortedEvents, setCurrentView, navigateToPlayer } = useApp();
+  const { players, sortedEvents, setCurrentView, navigateToPlayer, selectedSeason, setSelectedSeason } = useApp();
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   const allPlayerNames = useMemo(() => {
@@ -35,6 +35,22 @@ const StandingsView = () => {
             GLOBAL <span className="gold-shimmer">STANDINGS</span>
           </h2>
           <p className="text-[--text-secondary]">Combined scores across all events</p>
+          <div className="flex items-center justify-center gap-2 mt-6">
+            {['2025/2026', '2026/2027'].map(season => (
+              <button
+                key={season}
+                onClick={() => setSelectedSeason(season)}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  selectedSeason === season
+                    ? 'btn-gold'
+                    : 'border border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--gold-dark]'
+                }`}
+                style={selectedSeason !== season ? { background: 'var(--bg-elevated)' } : undefined}
+              >
+                Season {season}
+              </button>
+            ))}
+          </div>
           <div className="rope-divider max-w-xs mx-auto mt-6" />
           <button
             onClick={() => setCurrentView('head-to-head')}

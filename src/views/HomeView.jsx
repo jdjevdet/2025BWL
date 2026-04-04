@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import CountdownBadge from '../components/CountdownBadge';
 
 const HomeView = () => {
-  const { sortedEvents, setSelectedEvent, setCurrentView } = useApp();
+  const { sortedEvents, setSelectedEvent, setCurrentView, selectedSeason, setSelectedSeason } = useApp();
 
   return (
     <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
@@ -13,7 +13,7 @@ const HomeView = () => {
         <div className="text-center mb-16 animate-fadeInUp">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[--border-light] text-xs font-medium text-[--text-secondary] mb-6" style={{ background: 'var(--bg-elevated)' }}>
             <Zap className="w-3 h-3 text-[--gold]" />
-            Season 2025/2026
+            Season {selectedSeason}
           </div>
           <h1 className="font-bebas text-6xl sm:text-8xl lg:text-9xl tracking-tight leading-none mb-4">
             <span className="text-white">BELLEND</span>
@@ -24,6 +24,24 @@ const HomeView = () => {
             Fantasy Picks &mdash; Make your predictions and prove you know wrestling better than everyone else.
           </p>
           <div className="rope-divider max-w-xs mx-auto mt-8" />
+
+          {/* Season selector */}
+          <div className="flex items-center justify-center gap-3 mt-8">
+            {['2025/2026', '2026/2027'].map(season => (
+              <button
+                key={season}
+                onClick={() => setSelectedSeason(season)}
+                className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                  selectedSeason === season
+                    ? 'btn-gold'
+                    : 'border border-[--border-light] text-[--text-secondary] hover:text-white hover:border-[--gold-dark]'
+                }`}
+                style={selectedSeason !== season ? { background: 'var(--bg-elevated)' } : undefined}
+              >
+                Season {season}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Events grid */}

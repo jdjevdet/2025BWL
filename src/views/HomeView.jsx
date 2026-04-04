@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Calendar, Target, Users, Zap, Activity } from 'lucide-react';
+import { Trophy, Calendar, Target, Users, Activity } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import CountdownBadge from '../components/CountdownBadge';
 
@@ -11,10 +11,6 @@ const HomeView = () => {
       <div className="max-w-7xl mx-auto">
         {/* Hero */}
         <div className="text-center mb-16 animate-fadeInUp">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[--border-light] text-xs font-medium text-[--text-secondary] mb-6" style={{ background: 'var(--bg-elevated)' }}>
-            <Zap className="w-3 h-3 text-[--gold]" />
-            Season {selectedSeason}
-          </div>
           <h1 className="font-bebas text-6xl sm:text-8xl lg:text-9xl tracking-tight leading-none mb-4">
             <span className="text-white">BELLEND</span>
             <br />

@@ -182,15 +182,18 @@ const EventEditorCard = ({
                 <option value="live">Live</option>
                 <option value="completed">Completed</option>
               </select>
-              <select
-                value={localData.season || '2025/2026'}
-                onChange={(e) => setLocalData({ ...localData, season: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all appearance-none"
-                style={{ background: 'var(--bg-input)' }}
-              >
-                <option value="2025/2026">Season 2025/2026</option>
-                <option value="2026/2027">Season 2026/2027</option>
-              </select>
+              <div>
+                <label className="block text-[10px] text-[--text-muted] uppercase tracking-wider mb-1 font-medium">Season</label>
+                <select
+                  value={localData.season || '2025/2026'}
+                  onChange={(e) => setLocalData({ ...localData, season: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg text-sm text-white border border-[--border] transition-all appearance-none"
+                  style={{ background: 'var(--bg-input)' }}
+                >
+                  <option value="2025/2026">Season 2025/2026</option>
+                  <option value="2026/2027">Season 2026/2027</option>
+                </select>
+              </div>
               <label className="block border-2 border-dashed border-[--border-light] rounded-lg p-4 text-center cursor-pointer hover:border-[--gold-dark] transition-all">
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 {localData.bannerImage ? (

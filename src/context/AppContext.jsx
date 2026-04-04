@@ -315,19 +315,20 @@ export const AppProvider = ({ children }) => {
     } catch (error) { console.error("Error revoking badge:", error); alert("Failed to revoke badge."); }
   };
 
-  const saveBadgeTimestamps = async (playerId, newBadgeIds) => {
+  const saveBadgeTimestamps = async (playerId, newBadgeIds, backfill = false) => {
     if (newBadgeIds.length === 0) return;
     const player = players.find(p => p.id === playerId);
     if (!player) return;
     const timestamps = player.badgeTimestamps || {};
-    const now = Date.now();
-    const updates = {};
+    const value = backfill ? 1 : Date.now(); // 1 = epoch placeholder, never shows as NEW
+    const merged = { ...timestamps };
+    let changed = false;
     newBadgeIds.forEach(id => {
-      if (!timestamps[id]) updates[`badgeTimestamps.${id}`] = now;
+      if (!merged[id]) { merged[id] = value; changed = true; }
     });
-    if (Object.keys(updates).length === 0) return;
+    if (!changed) return;
     try {
-      await setDoc(doc(db, "players", playerId), { badgeTimestamps: { ...timestamps, ...Object.fromEntries(newBadgeIds.map(id => [id, now])) } }, { merge: true });
+      await setDoc(doc(db, "players", playerId), { badgeTimestamps: merged }, { merge: true });
     } catch (error) { console.error("Error saving badge timestamps:", error); }
   };
 

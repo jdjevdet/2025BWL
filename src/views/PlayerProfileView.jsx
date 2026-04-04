@@ -32,14 +32,17 @@ const PlayerProfileView = () => {
   const breakdown = getPlayerBreakdown(player, sortedEvents);
   const badges = getPlayerBadges(player, events, players);
 
-  // Save timestamps for newly earned badges (ones without a timestamp yet)
+  // Timestamp management for NEW badge indicators:
+  // - If player has no badgeTimestamps yet, backfill all current badges (won't show NEW)
+  // - If player already has badgeTimestamps, any new badge without one gets Date.now() (shows NEW for 12h)
   const savedRef = useRef(false);
   useEffect(() => {
     if (badges.length > 0 && !savedRef.current) {
       const newIds = getNewBadgeIds(player, badges);
       if (newIds.length > 0) {
         savedRef.current = true;
-        saveBadgeTimestamps(player.id, newIds);
+        const hasExistingTimestamps = player.badgeTimestamps && Object.keys(player.badgeTimestamps).length > 0;
+        saveBadgeTimestamps(player.id, newIds, !hasExistingTimestamps);
       }
     }
   }, [badges, player]);

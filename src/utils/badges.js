@@ -413,9 +413,11 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   const earned = [];
   if (!player || !player.name) return earned;
 
-  // Helper: get completed/live firebase events (non-historical)
+  // Helper: get completed/live firebase events
+  // NOTE: We include ALL firebase events here, even those sharing names with
+  // historical events. The historical name filter is only for scoring (to avoid
+  // double-counting points), but badges should be computed from actual match data.
   const fbEvents = allEvents.filter(e =>
-    !historicalEventNames.includes(e.name.toUpperCase()) &&
     (e.status === 'completed' || e.status === 'live') &&
     e.matches && e.matches.length > 0
   );
@@ -428,15 +430,14 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     historicalEventNames.forEach(name => {
       if (historicalScores[name]?.[player.name] !== undefined) count++;
     });
-    // Firebase
+    // Firebase — count ALL firebase events (even those sharing historical names,
+    // since they are separate events in a new season)
     allEvents.forEach(event => {
-      if (!historicalEventNames.includes(event.name.toUpperCase())) {
-        const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
-        const isSubmitted = event.submittedPlayers?.includes(player.name);
-        if (hasPicks || isSubmitted) {
-          count++;
-          fbParticipated.push(event.id);
-        }
+      const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+      const isSubmitted = event.submittedPlayers?.includes(player.name);
+      if (hasPicks || isSubmitted) {
+        count++;
+        fbParticipated.push(event.id);
       }
     });
     return { total: count, fbParticipated };
@@ -452,10 +453,11 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   };
 
   // Helper: get ranked results for an event (only players who participated)
+  // Uses event.type === 'historical' flag (set when building allOrderedEvents) to
+  // distinguish historical-only entries from real Firebase events.
   const getEventRankings = (event) => {
-    const isHistorical = historicalEventNames.includes(event.name?.toUpperCase?.());
-    if (isHistorical) {
-      const scores = historicalScores[event.name.toUpperCase()];
+    if (event.type === 'historical') {
+      const scores = historicalScores[event.name] || historicalScores[event.name?.toUpperCase?.()];
       if (!scores) return [];
       return Object.entries(scores)
         .map(([name, score]) => ({ name, score }))
@@ -463,7 +465,6 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
     }
     return allPlayers
       .filter(p => {
-        // Only include players who actually picked in this event
         const hasPicks = Object.keys(p.picks || {}).some(k => k.startsWith(`${event.id}-`));
         const isSubmitted = event.submittedPlayers?.includes(p.name);
         return hasPicks || isSubmitted;
@@ -581,7 +582,6 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
 
   // ── IRON MAN (all firebase events that are completed) ──
   const completedFbEvents = allEvents.filter(e =>
-    !historicalEventNames.includes(e.name.toUpperCase()) &&
     (e.status === 'completed' || e.status === 'live')
   );
   if (completedFbEvents.length >= 2) {
@@ -714,29 +714,16 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   if (hasContrarian) earned.push('contrarian');
 
   // ── PERFECT CARD ──
-  // Award when player picked correctly on ALL decided matches AND picked every match.
+  // Award when player picked correctly on ALL decided matches AND picked every one.
   let perfectCardCount = 0;
   fbEvents.forEach(event => {
     const decidedMatches = event.matches.filter(m => m.winner);
-    if (decidedMatches.length === 0) {
-      console.log(`[BADGE DEBUG] ${player.name} - ${event.name}: 0 decided matches, skipping`);
-      return;
-    }
-    const matchDetails = decidedMatches.map(m => {
-      const pickKey = `${event.id}-${m.id}`;
-      const playerPick = player.picks?.[pickKey];
-      return { title: m.title, winner: m.winner, pick: playerPick, pickKey, correct: playerPick === m.winner };
-    });
-    console.log(`[BADGE DEBUG] ${player.name} - ${event.name}:`, JSON.stringify(matchDetails, null, 2));
+    if (decidedMatches.length === 0) return;
     const pickedAll = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`]);
-    if (!pickedAll) {
-      console.log(`[BADGE DEBUG] ${player.name} - ${event.name}: didn't pick all decided matches`);
-      return;
-    }
+    if (!pickedAll) return;
     const correctPicks = decidedMatches.filter(m =>
       player.picks?.[`${event.id}-${m.id}`] === m.winner
     ).length;
-    console.log(`[BADGE DEBUG] ${player.name} - ${event.name}: ${correctPicks}/${decidedMatches.length} correct`);
     if (correctPicks === decidedMatches.length) perfectCardCount++;
   });
   if (perfectCardCount >= 1) earned.push('perfect-card');
@@ -756,7 +743,7 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   const allOrderedEvents = [
     ...historicalEventNames.map(name => ({ name, type: 'historical' })),
     ...allEvents
-      .filter(e => !historicalEventNames.includes(e.name.toUpperCase()) && (e.status === 'completed' || e.status === 'live'))
+      .filter(e => e.status === 'completed' || e.status === 'live')
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .map(e => ({ ...e, type: 'firebase' })),
   ];

@@ -2,13 +2,13 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronRight, Calendar, Trophy, TrendingUp, Target, Swords, Hash } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calculateTotalPoints, getPlayerBreakdown, historicalScores, historicalEventNames } from '../utils/scoring';
-import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS } from '../utils/badges';
+import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, getNewBadgeIds, isBadgeNew } from '../utils/badges';
 import PlayerAvatar from '../components/PlayerAvatar';
 import BadgeCard from '../components/BadgeCard';
 import BadgeModal from '../components/BadgeModal';
 
 const PlayerProfileView = () => {
-  const { players, sortedEvents, events, setCurrentView, setSelectedEvent, currentUser, markBadgesSeen } = useApp();
+  const { players, sortedEvents, events, setCurrentView, setSelectedEvent, saveBadgeTimestamps } = useApp();
   const [selectedBadge, setSelectedBadge] = useState(null);
 
   // Get player name from URL-like state or context
@@ -32,25 +32,17 @@ const PlayerProfileView = () => {
   const breakdown = getPlayerBreakdown(player, sortedEvents);
   const badges = getPlayerBadges(player, events, players);
 
-  // Track which badges are new (not yet seen by the player)
-  const seenBadges = player.seenBadges || [];
-  const newBadgeIds = useMemo(() => {
-    return new Set(badges.filter(b => !seenBadges.includes(b.id)).map(b => b.id));
-  }, [badges, seenBadges]);
-
-  // When the player views their own profile, mark all current badges as seen
-  const markedRef = useRef(false);
-  const isOwnProfile = currentUser === player.name;
+  // Save timestamps for newly earned badges (ones without a timestamp yet)
+  const savedRef = useRef(false);
   useEffect(() => {
-    if (isOwnProfile && badges.length > 0 && newBadgeIds.size > 0 && !markedRef.current) {
-      markedRef.current = true;
-      // Delay slightly so the "NEW" tags are visible before disappearing
-      const timer = setTimeout(() => {
-        markBadgesSeen(player.id, badges.map(b => b.id));
-      }, 5000);
-      return () => clearTimeout(timer);
+    if (badges.length > 0 && !savedRef.current) {
+      const newIds = getNewBadgeIds(player, badges);
+      if (newIds.length > 0) {
+        savedRef.current = true;
+        saveBadgeTimestamps(player.id, newIds);
+      }
     }
-  }, [isOwnProfile, badges, newBadgeIds.size]);
+  }, [badges, player]);
 
   // Calculate rank
   const allPlayerNames = useMemo(() => {
@@ -179,7 +171,7 @@ const PlayerProfileView = () => {
                 {badges.length > 0 && (
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4">
                     {badges.slice(0, 8).map(badge => (
-                      <BadgeCard key={badge.id} badge={badge} size="sm" isNew={newBadgeIds.has(badge.id)} onClick={() => setSelectedBadge(badge)} />
+                      <BadgeCard key={badge.id} badge={badge} size="sm" isNew={isBadgeNew(player, badge.id)} onClick={() => setSelectedBadge(badge)} />
                     ))}
                     {badges.length > 8 && (
                       <span className="text-xs text-[--text-muted] font-medium ml-1">+{badges.length - 8} more</span>
@@ -245,7 +237,7 @@ const PlayerProfileView = () => {
                     key={badge.id}
                     badge={badge}
                     size="md"
-                    isNew={newBadgeIds.has(badge.id)}
+                    isNew={isBadgeNew(player, badge.id)}
                     onClick={() => setSelectedBadge(badge)}
                   />
                 ))}

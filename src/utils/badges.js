@@ -1574,3 +1574,20 @@ export function getPlayerBadges(player, allEvents, allPlayers) {
     .sort((a, b) => RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity));
 }
 
+/* Check which badges are newly earned and need timestamps saved */
+export function getNewBadgeIds(player, currentBadges) {
+  const timestamps = player.badgeTimestamps || {};
+  return currentBadges
+    .filter(b => !timestamps[b.id])
+    .map(b => b.id);
+}
+
+/* Check if a badge is "new" (earned within last 12 hours) */
+export function isBadgeNew(player, badgeId) {
+  const timestamps = player.badgeTimestamps || {};
+  const ts = timestamps[badgeId];
+  if (!ts) return false; // no timestamp = existed before this feature
+  const twelveHours = 12 * 60 * 60 * 1000;
+  return (Date.now() - ts) < twelveHours;
+}
+

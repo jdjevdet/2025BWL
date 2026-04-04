@@ -315,15 +315,20 @@ export const AppProvider = ({ children }) => {
     } catch (error) { console.error("Error revoking badge:", error); alert("Failed to revoke badge."); }
   };
 
-  const markBadgesSeen = async (playerId, badgeIds) => {
+  const saveBadgeTimestamps = async (playerId, newBadgeIds) => {
+    if (newBadgeIds.length === 0) return;
     const player = players.find(p => p.id === playerId);
     if (!player) return;
-    const seenBadges = player.seenBadges || [];
-    const newSeen = [...new Set([...seenBadges, ...badgeIds])];
-    if (newSeen.length === seenBadges.length) return; // nothing new
+    const timestamps = player.badgeTimestamps || {};
+    const now = Date.now();
+    const updates = {};
+    newBadgeIds.forEach(id => {
+      if (!timestamps[id]) updates[`badgeTimestamps.${id}`] = now;
+    });
+    if (Object.keys(updates).length === 0) return;
     try {
-      await setDoc(doc(db, "players", playerId), { seenBadges: newSeen }, { merge: true });
-    } catch (error) { console.error("Error marking badges seen:", error); }
+      await setDoc(doc(db, "players", playerId), { badgeTimestamps: { ...timestamps, ...Object.fromEntries(newBadgeIds.map(id => [id, now])) } }, { merge: true });
+    } catch (error) { console.error("Error saving badge timestamps:", error); }
   };
 
   const value = {
@@ -346,7 +351,7 @@ export const AppProvider = ({ children }) => {
     uploadAvatar, removeAvatar,
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
     selectedPlayerName, setSelectedPlayerName, navigateToPlayer,
-    awardBadge, revokeBadge, markBadgesSeen,
+    awardBadge, revokeBadge, saveBadgeTimestamps,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

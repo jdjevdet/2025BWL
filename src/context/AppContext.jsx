@@ -3,6 +3,7 @@ import { db, storage } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, addDoc, deleteField } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { isExclusivePicksMatch, isExemptFromExclusive, getPicksTakenByOthers } from '../utils/helpers';
+import { getPlayerBadges } from '../utils/badges';
 
 const AppContext = createContext();
 
@@ -315,22 +316,34 @@ export const AppProvider = ({ children }) => {
     } catch (error) { console.error("Error revoking badge:", error); alert("Failed to revoke badge."); }
   };
 
-  const saveBadgeTimestamps = async (playerId, newBadgeIds, backfill = false) => {
-    if (newBadgeIds.length === 0) return;
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-    const timestamps = player.badgeTimestamps || {};
-    const value = backfill ? 1 : Date.now(); // 1 = epoch placeholder, never shows as NEW
-    const merged = { ...timestamps };
-    let changed = false;
-    newBadgeIds.forEach(id => {
-      if (!merged[id]) { merged[id] = value; changed = true; }
+  // Sync badge timestamps for all players.
+  // First run: stamps all existing badges with 1 (old, won't show NEW).
+  // Future runs: any badge without a timestamp gets Date.now() (shows NEW for 12h).
+  const badgeSyncDone = useRef(false);
+  useEffect(() => {
+    if (badgeSyncDone.current || players.length === 0 || events.length === 0) return;
+    badgeSyncDone.current = true;
+    players.forEach(async (player) => {
+      const badges = getPlayerBadges(player, events, players);
+      const timestamps = player.badgeTimestamps || {};
+      const hasAnyTimestamps = Object.keys(timestamps).length > 0;
+      const merged = { ...timestamps };
+      let changed = false;
+      badges.forEach(b => {
+        if (!merged[b.id]) {
+          // If player has no timestamps at all, this is first sync — backfill with 1
+          // If player already has some timestamps, this badge is genuinely new — use Date.now()
+          merged[b.id] = hasAnyTimestamps ? Date.now() : 1;
+          changed = true;
+        }
+      });
+      if (changed) {
+        try {
+          await setDoc(doc(db, "players", player.id), { badgeTimestamps: merged }, { merge: true });
+        } catch (error) { console.error("Error syncing badge timestamps:", error); }
+      }
     });
-    if (!changed) return;
-    try {
-      await setDoc(doc(db, "players", playerId), { badgeTimestamps: merged }, { merge: true });
-    } catch (error) { console.error("Error saving badge timestamps:", error); }
-  };
+  }, [players, events]);
 
   const value = {
     currentView, setCurrentView,
@@ -352,7 +365,7 @@ export const AppProvider = ({ children }) => {
     uploadAvatar, removeAvatar,
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
     selectedPlayerName, setSelectedPlayerName, navigateToPlayer,
-    awardBadge, revokeBadge, saveBadgeTimestamps,
+    awardBadge, revokeBadge,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,14 +1,14 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronRight, Calendar, Trophy, TrendingUp, Target, Swords, Hash } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { calculateTotalPoints, getPlayerBreakdown, historicalScores, historicalEventNames } from '../utils/scoring';
-import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, getNewBadgeIds, isBadgeNew } from '../utils/badges';
+import { getPlayerBadges, RARITY_ORDER, RARITY_CONFIG, BADGE_DEFINITIONS, isBadgeNew } from '../utils/badges';
 import PlayerAvatar from '../components/PlayerAvatar';
 import BadgeCard from '../components/BadgeCard';
 import BadgeModal from '../components/BadgeModal';
 
 const PlayerProfileView = () => {
-  const { players, sortedEvents, events, setCurrentView, setSelectedEvent, saveBadgeTimestamps } = useApp();
+  const { players, sortedEvents, events, setCurrentView, setSelectedEvent } = useApp();
   const [selectedBadge, setSelectedBadge] = useState(null);
 
   // Get player name from URL-like state or context
@@ -31,21 +31,6 @@ const PlayerProfileView = () => {
   const totalPoints = calculateTotalPoints(player, sortedEvents);
   const breakdown = getPlayerBreakdown(player, sortedEvents);
   const badges = getPlayerBadges(player, events, players);
-
-  // Timestamp management for NEW badge indicators:
-  // - If player has no badgeTimestamps yet, backfill all current badges (won't show NEW)
-  // - If player already has badgeTimestamps, any new badge without one gets Date.now() (shows NEW for 12h)
-  const savedRef = useRef(false);
-  useEffect(() => {
-    if (badges.length > 0 && !savedRef.current) {
-      const newIds = getNewBadgeIds(player, badges);
-      if (newIds.length > 0) {
-        savedRef.current = true;
-        const hasExistingTimestamps = player.badgeTimestamps && Object.keys(player.badgeTimestamps).length > 0;
-        saveBadgeTimestamps(player.id, newIds, !hasExistingTimestamps);
-      }
-    }
-  }, [badges, player]);
 
   // Calculate rank
   const allPlayerNames = useMemo(() => {

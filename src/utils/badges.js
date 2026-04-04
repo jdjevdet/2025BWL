@@ -715,20 +715,28 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
 
   // ── PERFECT CARD ──
   // Award when player picked correctly on ALL decided matches AND picked every match.
-  // For completed events: all matches must have winners and all must be correct.
-  // For live events: all matches that have winners must be correct, AND the player
-  // must have picked every decided match correctly (no misses allowed).
   let perfectCardCount = 0;
   fbEvents.forEach(event => {
     const decidedMatches = event.matches.filter(m => m.winner);
-    if (decidedMatches.length === 0) return;
-    // Player must have picked every decided match
+    if (decidedMatches.length === 0) {
+      console.log(`[BADGE DEBUG] ${player.name} - ${event.name}: 0 decided matches, skipping`);
+      return;
+    }
+    const matchDetails = decidedMatches.map(m => {
+      const pickKey = `${event.id}-${m.id}`;
+      const playerPick = player.picks?.[pickKey];
+      return { title: m.title, winner: m.winner, pick: playerPick, pickKey, correct: playerPick === m.winner };
+    });
+    console.log(`[BADGE DEBUG] ${player.name} - ${event.name}:`, JSON.stringify(matchDetails, null, 2));
     const pickedAll = decidedMatches.every(m => player.picks?.[`${event.id}-${m.id}`]);
-    if (!pickedAll) return;
+    if (!pickedAll) {
+      console.log(`[BADGE DEBUG] ${player.name} - ${event.name}: didn't pick all decided matches`);
+      return;
+    }
     const correctPicks = decidedMatches.filter(m =>
       player.picks?.[`${event.id}-${m.id}`] === m.winner
     ).length;
-    // All decided matches must be correct
+    console.log(`[BADGE DEBUG] ${player.name} - ${event.name}: ${correctPicks}/${decidedMatches.length} correct`);
     if (correctPicks === decidedMatches.length) perfectCardCount++;
   });
   if (perfectCardCount >= 1) earned.push('perfect-card');

@@ -353,7 +353,7 @@ const PlayerManagement = () => {
   const [adminPinInput, setAdminPinInput] = useState('');
   const [managingBadgesFor, setManagingBadgesFor] = useState(null);
 
-  const legendaryBadges = BADGE_DEFINITIONS.filter(b => b.rarity === 'legendary');
+  const adminBadges = BADGE_DEFINITIONS.filter(b => !b.autoEarn);
 
   const handleAddPlayer = () => { addPlayer(localPlayerName); setLocalPlayerName(''); };
 
@@ -532,10 +532,10 @@ const PlayerManagement = () => {
                         <div className="px-3.5 pb-3 animate-fadeIn">
                           <div className="p-3 rounded-lg border border-[--gold-dark]/20" style={{ background: 'rgba(201,168,76,0.03)' }}>
                             <p className="text-[10px] font-bold uppercase tracking-wider text-[--gold] mb-2 flex items-center gap-1.5">
-                              <Crown className="w-3 h-3" /> Legendary Badges (Admin-Awarded)
+                              <Crown className="w-3 h-3" /> Admin-Awarded Badges
                             </p>
                             <div className="flex flex-wrap gap-1.5">
-                              {legendaryBadges.map(badge => {
+                              {adminBadges.map(badge => {
                                 const isAwarded = manualBadges.includes(badge.id);
                                 return (
                                   <button

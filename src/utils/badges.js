@@ -273,6 +273,24 @@ export const BADGE_DEFINITIONS = [
     icon: 'Skull',
     autoEarn: true,
   },
+  {
+    id: 'dericks-father',
+    name: "Derick's Father",
+    description: 'Beat Derick by 3 or more points in any event.',
+    flavor: '"Who\'s your daddy?"',
+    rarity: 'rare',
+    icon: 'Crown',
+    autoEarn: true,
+  },
+  {
+    id: 'im-sorry-i-love-you',
+    name: 'I\'m Sorry. I Love You.',
+    description: 'Steal a point from another player during the Mr. Predictamania event.',
+    flavor: '"The hardest choices require the strongest wills."',
+    rarity: 'rare',
+    icon: 'Skull',
+    autoEarn: false,
+  },
   // ── EPIC ──
   {
     id: 'the-oracle',
@@ -838,6 +856,27 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
 
   // ── UNBREAKABLE (5+ event wins all time) ──
   if (totalEventWins >= 5) earned.push('unbreakable');
+
+  // ── DERICK'S FATHER (beat Derick by 3+ in any event) ──
+  if (player.name !== 'Derick') {
+    let hasDericksFather = false;
+    fbEvents.forEach(event => {
+      const playerScore = getEventScore(player, event);
+      const derickPlayer = allPlayers.find(p => p.name === 'Derick');
+      if (derickPlayer) {
+        const derickScore = getEventScore(derickPlayer, event);
+        if (playerScore - derickScore >= 3) hasDericksFather = true;
+      }
+    });
+    if (!hasDericksFather) {
+      historicalEventNames.forEach(name => {
+        const scores = historicalScores[name];
+        if (!scores || scores[player.name] === undefined || scores['Derick'] === undefined) return;
+        if (scores[player.name] - scores['Derick'] >= 3) hasDericksFather = true;
+      });
+    }
+    if (hasDericksFather) earned.push('dericks-father');
+  }
 
   // ── CINDERELLA RUN (last place globally to top 3 in a season) ──
   // Check firebase events only (current season)

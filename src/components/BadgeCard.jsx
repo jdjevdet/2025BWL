@@ -10,7 +10,7 @@ const ICON_MAP = {
   CircleX, Copy, Frown, CloudLightning, Heart, Bomb, RotateCcw, HeartCrack, Laugh, Hash, Tv, Mountain, Lock, Package, Shield,
 };
 
-const BadgeCard = ({ badge, size = 'md', onClick, isNew = false }) => {
+const BadgeCard = ({ badge, size = 'md', onClick }) => {
   if (!badge) return null;
   const rarity = RARITY_CONFIG[badge.rarity];
   const Icon = ICON_MAP[badge.icon] || Target;
@@ -39,11 +39,6 @@ const BadgeCard = ({ badge, size = 'md', onClick, isNew = false }) => {
             <span /><span /><span /><span /><span /><span />
           </div>
         )}
-        {isNew && (
-          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[7px] font-bold uppercase px-1 py-px rounded-full leading-none shadow-lg shadow-red-500/30 animate-pulse">
-            NEW
-          </span>
-        )}
       </button>
     );
   }
@@ -55,11 +50,6 @@ const BadgeCard = ({ badge, size = 'md', onClick, isNew = false }) => {
       className={`badge-card badge-${badge.rarity} ${s.card} p-5 flex flex-col items-center gap-3 text-center relative`}
       style={{ background: rarity.bg }}
     >
-      {isNew && (
-        <span className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full leading-none shadow-lg shadow-red-500/30 animate-pulse">
-          NEW
-        </span>
-      )}
       <div className="relative">
         <div className={`badge-icon-ring badge-icon-ring-${badge.rarity} ${s.ring} flex items-center justify-center`}>
           <Icon className={s.icon} style={{ color: rarity.color }} />

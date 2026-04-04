@@ -175,7 +175,7 @@ const PlayerProfileView = () => {
                 { label: 'Events', value: eventsPlayed, icon: Calendar },
                 { label: 'Event Wins', value: eventWins, icon: Trophy },
                 { label: 'Correct Picks', value: totalCorrect, icon: Target },
-                { label: 'Badges', value: badges.length, icon: Swords },
+                { label: 'Badges', value: `${badges.length}/${BADGE_DEFINITIONS.length}`, icon: Swords },
               ].map((stat, i) => (
                 <div
                   key={i}
@@ -197,9 +197,27 @@ const PlayerProfileView = () => {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--gold-dark), var(--gold))' }}>
               <Swords className="w-4 h-4 text-[--bg-deep]" />
             </div>
-            <div>
-              <h2 className="font-bebas text-3xl tracking-wide text-white">Achievements</h2>
-              <p className="text-xs text-[--text-muted]">{badges.length} of {BADGE_DEFINITIONS.length} badges earned</p>
+            <div className="flex-1">
+              <div className="flex items-baseline gap-2">
+                <h2 className="font-bebas text-3xl tracking-wide text-white">Achievements</h2>
+                <span className="font-bebas text-xl tracking-wide text-[--gold]">{badges.length}/{BADGE_DEFINITIONS.length}</span>
+              </div>
+              <div className="flex items-center gap-3 mt-1.5">
+                <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${Math.round((badges.length / BADGE_DEFINITIONS.length) * 100)}%`,
+                      background: badges.length === BADGE_DEFINITIONS.length
+                        ? 'var(--emerald)'
+                        : 'linear-gradient(90deg, var(--gold-dark), var(--gold))',
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] text-[--text-muted] font-medium tabular-nums whitespace-nowrap">
+                  {Math.round((badges.length / BADGE_DEFINITIONS.length) * 100)}%
+                </span>
+              </div>
             </div>
           </div>
 

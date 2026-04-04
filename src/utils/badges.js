@@ -118,6 +118,42 @@ export const BADGE_DEFINITIONS = [
     icon: 'Baby',
     autoEarn: true,
   },
+  {
+    id: 'wrong-place-wrong-time',
+    name: 'Wrong Place, Wrong Time',
+    description: 'Score 0 points in an event.',
+    flavor: '"You showed up... that\'s about it."',
+    rarity: 'common',
+    icon: 'CircleX',
+    autoEarn: true,
+  },
+  {
+    id: 'the-copycat',
+    name: 'The Copycat',
+    description: 'Submit the exact same picks as another player for an entire event.',
+    flavor: '"Great minds think alike... or one of you is cheating."',
+    rarity: 'common',
+    icon: 'Copy',
+    autoEarn: true,
+  },
+  {
+    id: 'participation-trophy',
+    name: 'Participation Trophy',
+    description: 'Participate in an event but finish dead last.',
+    flavor: '"Hey, at least you tried."',
+    rarity: 'common',
+    icon: 'Frown',
+    autoEarn: true,
+  },
+  {
+    id: 'the-jinx',
+    name: 'The Jinx',
+    description: 'Pick a wrestler who loses 5 or more times across your career.',
+    flavor: '"At this point, they lose BECAUSE you picked them."',
+    rarity: 'common',
+    icon: 'CloudLightning',
+    autoEarn: true,
+  },
   // ── UNCOMMON ──
   {
     id: 'hat-trick',
@@ -198,6 +234,60 @@ export const BADGE_DEFINITIONS = [
     flavor: '"You don\'t follow the crowd — you ARE the crowd."',
     rarity: 'uncommon',
     icon: 'AlertTriangle',
+    autoEarn: true,
+  },
+  {
+    id: 'ride-or-die',
+    name: 'Ride or Die',
+    description: 'Pick the same wrestler to win 3 or more times across different events.',
+    flavor: '"Loyalty above logic."',
+    rarity: 'uncommon',
+    icon: 'Heart',
+    autoEarn: true,
+  },
+  {
+    id: 'chaos-agent',
+    name: 'Chaos Agent',
+    description: 'Have the most unique picks in an event — fewest matches agreeing with anyone.',
+    flavor: '"Some people just want to watch the world burn."',
+    rarity: 'uncommon',
+    icon: 'Bomb',
+    autoEarn: true,
+  },
+  {
+    id: 'the-sweater',
+    name: 'The Sweater',
+    description: 'Submit picks for an event, then ask the admin to reset them.',
+    flavor: '"Indecision is a decision."',
+    rarity: 'uncommon',
+    icon: 'RotateCcw',
+    autoEarn: false,
+  },
+  {
+    id: 'heartbreaker',
+    name: 'Heartbreaker',
+    description: 'Finish in 2nd place in 3 or more events.',
+    flavor: '"Always the bridesmaid, never the bride."',
+    rarity: 'uncommon',
+    icon: 'HeartCrack',
+    autoEarn: true,
+  },
+  {
+    id: 'last-laugh',
+    name: 'Last Laugh',
+    description: 'Finish last in the first half of matches, then top 3 by the end.',
+    flavor: '"Slow starts, strong finishes."',
+    rarity: 'uncommon',
+    icon: 'Laugh',
+    autoEarn: true,
+  },
+  {
+    id: 'dericks-son',
+    name: "Derick's Son",
+    description: 'Lose to Derick by 3 or more points in any event.',
+    flavor: '"Who\'s the father now?"',
+    rarity: 'uncommon',
+    icon: 'Baby',
     autoEarn: true,
   },
   // ── RARE ──
@@ -291,6 +381,51 @@ export const BADGE_DEFINITIONS = [
     icon: 'Skull',
     autoEarn: false,
   },
+  {
+    id: 'the-accountant',
+    name: 'The Accountant',
+    description: 'Finish in exactly 3rd place in 5 or more events.',
+    flavor: '"Consistent mediocrity is an art form."',
+    rarity: 'rare',
+    icon: 'Hash',
+    autoEarn: true,
+  },
+  {
+    id: 'nemesis',
+    name: 'Nemesis',
+    description: 'Beat the same player in 5 consecutive events.',
+    flavor: '"It\'s not personal... okay, it\'s personal."',
+    rarity: 'rare',
+    icon: 'Crosshair',
+    autoEarn: true,
+  },
+  {
+    id: 'main-eventer',
+    name: 'Main Eventer',
+    description: 'Get the main event (last match) correct in 5 or more events.',
+    flavor: '"When it matters most, you deliver."',
+    rarity: 'rare',
+    icon: 'Tv',
+    autoEarn: true,
+  },
+  {
+    id: 'heel-turn',
+    name: 'Heel Turn',
+    description: 'Go from 1st place to last place between consecutive events.',
+    flavor: '"You either die a hero or live long enough to see yourself become the villain."',
+    rarity: 'rare',
+    icon: 'ArrowDownUp',
+    autoEarn: true,
+  },
+  {
+    id: 'giant-killer',
+    name: 'Giant Killer',
+    description: 'Beat the #1 ranked player in 3 different events while ranked in the bottom half.',
+    flavor: '"David vs. Goliath, and David keeps winning."',
+    rarity: 'rare',
+    icon: 'Mountain',
+    autoEarn: true,
+  },
   // ── EPIC ──
   {
     id: 'the-oracle',
@@ -344,6 +479,51 @@ export const BADGE_DEFINITIONS = [
     flavor: '"The alpha and the omega. Beginning and end."',
     rarity: 'epic',
     icon: 'Flag',
+    autoEarn: true,
+  },
+  {
+    id: 'the-undertaker',
+    name: 'The Undertaker',
+    description: 'Win an event with 10 or more matches.',
+    flavor: '"Rest. In. Peace."',
+    rarity: 'epic',
+    icon: 'Skull',
+    autoEarn: true,
+  },
+  {
+    id: 'sixth-sense',
+    name: 'Sixth Sense',
+    description: 'Correctly pick 3 or more matches where no other player picked the same winner.',
+    flavor: '"You see what no one else can."',
+    rarity: 'epic',
+    icon: 'Eye',
+    autoEarn: true,
+  },
+  {
+    id: 'stone-cold-lock',
+    name: 'Stone Cold Lock',
+    description: 'Maintain 70%+ accuracy across 3 consecutive events.',
+    flavor: '"And that\'s the bottom line."',
+    rarity: 'epic',
+    icon: 'Lock',
+    autoEarn: true,
+  },
+  {
+    id: 'the-collector',
+    name: 'The Collector',
+    description: 'Earn 20 or more badges total.',
+    flavor: '"Gotta catch \'em all."',
+    rarity: 'epic',
+    icon: 'Package',
+    autoEarn: true,
+  },
+  {
+    id: 'ironclad',
+    name: 'Ironclad',
+    description: 'Never finish below 3rd place across 5 or more consecutive events.',
+    flavor: '"An unshakeable force at the top."',
+    rarity: 'epic',
+    icon: 'Shield',
     autoEarn: true,
   },
   // ── LEGENDARY (admin-only) ──
@@ -1020,6 +1200,360 @@ export function calculateEarnedBadges(player, allEvents, allPlayers) {
   });
   if (hasUntouchable) earned.push('untouchable');
 
+  // ── WRONG PLACE, WRONG TIME (score 0 in an event) ──
+  let hasWrongPlace = false;
+  fbEvents.forEach(event => {
+    const decidedMatches = event.matches.filter(m => m.winner);
+    if (decidedMatches.length === 0) return;
+    const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+    if (!hasPicks && !event.submittedPlayers?.includes(player.name)) return;
+    if (getEventScore(player, event) === 0) hasWrongPlace = true;
+  });
+  if (!hasWrongPlace) {
+    historicalEventNames.forEach(name => {
+      if (historicalScores[name]?.[player.name] === 0) hasWrongPlace = true;
+    });
+  }
+  if (hasWrongPlace) earned.push('wrong-place-wrong-time');
+
+  // ── THE COPYCAT (exact same picks as another player for entire event) ──
+  let hasCopycat = false;
+  fbEvents.forEach(event => {
+    const playerPickKeys = event.matches.map(m => `${event.id}-${m.id}`);
+    const playerPicks = playerPickKeys.map(k => player.picks?.[k]).filter(Boolean);
+    if (playerPicks.length === 0) return;
+    allPlayers.forEach(other => {
+      if (other.name === player.name) return;
+      const otherPicks = playerPickKeys.map(k => other.picks?.[k]).filter(Boolean);
+      if (otherPicks.length === 0 || otherPicks.length !== playerPicks.length) return;
+      const allMatch = playerPickKeys.every(k => player.picks?.[k] && player.picks[k] === other.picks?.[k]);
+      if (allMatch && playerPicks.length >= 2) hasCopycat = true;
+    });
+  });
+  if (hasCopycat) earned.push('the-copycat');
+
+  // ── PARTICIPATION TROPHY (finish dead last in an event) ──
+  let hasParticipationTrophy = false;
+  fbEvents.forEach(event => {
+    const rankings = getEventRankings(event);
+    if (rankings.length < 2) return;
+    if (rankings[rankings.length - 1].name === player.name) hasParticipationTrophy = true;
+  });
+  if (!hasParticipationTrophy) {
+    historicalEventNames.forEach(name => {
+      const scores = historicalScores[name];
+      if (!scores || scores[player.name] === undefined) return;
+      const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
+      if (sorted[sorted.length - 1][0] === player.name) hasParticipationTrophy = true;
+    });
+  }
+  if (hasParticipationTrophy) earned.push('participation-trophy');
+
+  // ── THE JINX (pick a wrestler who loses 5+ times across career) ──
+  let hasJinx = false;
+  const pickLossCounts = {};
+  fbEvents.forEach(event => {
+    event.matches.forEach(match => {
+      if (!match.winner) return;
+      const pick = player.picks?.[`${event.id}-${match.id}`];
+      if (pick && pick !== match.winner) {
+        pickLossCounts[pick] = (pickLossCounts[pick] || 0) + 1;
+      }
+    });
+  });
+  if (Object.values(pickLossCounts).some(c => c >= 5)) hasJinx = true;
+  if (hasJinx) earned.push('the-jinx');
+
+  // ── RIDE OR DIE (pick same wrestler 3+ times across events) ──
+  let hasRideOrDie = false;
+  const pickCareerCounts = {};
+  fbEvents.forEach(event => {
+    event.matches.forEach(match => {
+      const pick = player.picks?.[`${event.id}-${match.id}`];
+      if (pick) pickCareerCounts[pick] = (pickCareerCounts[pick] || 0) + 1;
+    });
+  });
+  if (Object.values(pickCareerCounts).some(c => c >= 3)) hasRideOrDie = true;
+  if (hasRideOrDie) earned.push('ride-or-die');
+
+  // ── CHAOS AGENT (most unique picks in an event) ──
+  let hasChaosAgent = false;
+  fbEvents.forEach(event => {
+    if (event.matches.length < 3) return;
+    const participants = allPlayers.filter(p =>
+      Object.keys(p.picks || {}).some(k => k.startsWith(`${event.id}-`))
+    );
+    if (participants.length < 3) return;
+    // For each player, count how many matches they agreed with at least one other player
+    const agreementCounts = {};
+    participants.forEach(p => {
+      let agreements = 0;
+      event.matches.forEach(match => {
+        const myPick = p.picks?.[`${event.id}-${match.id}`];
+        if (!myPick) return;
+        const othersAgreed = participants.some(o =>
+          o.name !== p.name && o.picks?.[`${event.id}-${match.id}`] === myPick
+        );
+        if (othersAgreed) agreements++;
+      });
+      agreementCounts[p.name] = agreements;
+    });
+    const playerAgreements = agreementCounts[player.name];
+    if (playerAgreements === undefined) return;
+    const minAgreements = Math.min(...Object.values(agreementCounts));
+    if (playerAgreements === minAgreements && playerAgreements < event.matches.length) {
+      // Make sure this player is uniquely the most contrarian (or tied for it)
+      hasChaosAgent = true;
+    }
+  });
+  if (hasChaosAgent) earned.push('chaos-agent');
+
+  // ── HEARTBREAKER (2nd place in 3+ events) ──
+  let secondPlaceCount = 0;
+  fbEvents.forEach(event => {
+    const rankings = getEventRankings(event);
+    if (rankings.length >= 2 && rankings[1].name === player.name) secondPlaceCount++;
+  });
+  historicalEventNames.forEach(name => {
+    const scores = historicalScores[name];
+    if (!scores || scores[player.name] === undefined) return;
+    const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
+    if (sorted.length >= 2 && sorted[1][0] === player.name) secondPlaceCount++;
+  });
+  if (secondPlaceCount >= 3) earned.push('heartbreaker');
+
+  // ── LAST LAUGH (last in first half, top 3 by end) ──
+  let hasLastLaugh = false;
+  fbEvents.forEach(event => {
+    const matches = event.matches || [];
+    const decidedMatches = matches.filter(m => m.winner);
+    if (decidedMatches.length < 4) return;
+    const halfIdx = Math.floor(decidedMatches.length / 2);
+    const firstHalf = decidedMatches.slice(0, halfIdx);
+    // Rank players by first half only
+    const participants = allPlayers.filter(p =>
+      Object.keys(p.picks || {}).some(k => k.startsWith(`${event.id}-`))
+    );
+    if (participants.length < 3) return;
+    const firstHalfRankings = participants
+      .map(p => {
+        let score = 0;
+        firstHalf.forEach(m => {
+          if (p.picks?.[`${event.id}-${m.id}`] === m.winner) score++;
+        });
+        return { name: p.name, score };
+      })
+      .sort((a, b) => b.score - a.score);
+    const firstHalfRank = firstHalfRankings.findIndex(r => r.name === player.name);
+    if (firstHalfRank === firstHalfRankings.length - 1) {
+      // Was last in first half — check final ranking
+      const finalRankings = getEventRankings(event);
+      const finalRank = finalRankings.findIndex(r => r.name === player.name);
+      if (finalRank !== -1 && finalRank < 3) hasLastLaugh = true;
+    }
+  });
+  if (hasLastLaugh) earned.push('last-laugh');
+
+  // ── DERICK'S SON (lose to Derick by 3+ in any event) ──
+  if (player.name !== 'Derick') {
+    let hasDericksSon = false;
+    fbEvents.forEach(event => {
+      const derickPlayer = allPlayers.find(p => p.name === 'Derick');
+      if (derickPlayer) {
+        const derickScore = getEventScore(derickPlayer, event);
+        const playerScore = getEventScore(player, event);
+        if (derickScore - playerScore >= 3) hasDericksSon = true;
+      }
+    });
+    if (!hasDericksSon) {
+      historicalEventNames.forEach(name => {
+        const scores = historicalScores[name];
+        if (!scores || scores[player.name] === undefined || scores['Derick'] === undefined) return;
+        if (scores['Derick'] - scores[player.name] >= 3) hasDericksSon = true;
+      });
+    }
+    if (hasDericksSon) earned.push('dericks-son');
+  }
+
+  // ── THE ACCOUNTANT (exactly 3rd place in 5+ events) ──
+  let thirdPlaceCount = 0;
+  fbEvents.forEach(event => {
+    const rankings = getEventRankings(event);
+    if (rankings.length >= 3 && rankings[2].name === player.name) thirdPlaceCount++;
+  });
+  historicalEventNames.forEach(name => {
+    const scores = historicalScores[name];
+    if (!scores || scores[player.name] === undefined) return;
+    const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
+    if (sorted.length >= 3 && sorted[2][0] === player.name) thirdPlaceCount++;
+  });
+  if (thirdPlaceCount >= 5) earned.push('the-accountant');
+
+  // ── NEMESIS (beat same player in 5 consecutive events) ──
+  let hasNemesis = false;
+  const otherNames = allPlayers.filter(p => p.name !== player.name).map(p => p.name);
+  otherNames.forEach(opponentName => {
+    let streak = 0;
+    allOrderedEvents.forEach(event => {
+      let myScore, theirScore;
+      if (event.type === 'historical') {
+        const scores = historicalScores[event.name] || {};
+        myScore = scores[player.name];
+        theirScore = scores[opponentName];
+      } else {
+        const opponent = allPlayers.find(p => p.name === opponentName);
+        myScore = getEventScore(player, event);
+        theirScore = opponent ? getEventScore(opponent, event) : undefined;
+      }
+      if (myScore !== undefined && theirScore !== undefined && myScore > theirScore) {
+        streak++;
+        if (streak >= 5) hasNemesis = true;
+      } else {
+        streak = 0;
+      }
+    });
+  });
+  if (hasNemesis) earned.push('nemesis');
+
+  // ── MAIN EVENTER (last match correct in 5+ events) ──
+  let mainEventCorrect = 0;
+  fbEvents.forEach(event => {
+    const matches = event.matches || [];
+    if (matches.length === 0) return;
+    const lastMatch = matches[matches.length - 1];
+    if (lastMatch.winner && player.picks?.[`${event.id}-${lastMatch.id}`] === lastMatch.winner) {
+      mainEventCorrect++;
+    }
+  });
+  if (mainEventCorrect >= 5) earned.push('main-eventer');
+
+  // ── HEEL TURN (1st to last between consecutive events) ──
+  let hasHeelTurn = false;
+  for (let i = 1; i < allOrderedEvents.length; i++) {
+    const prevEvent = allOrderedEvents[i - 1];
+    const currEvent = allOrderedEvents[i];
+    const prevRankings = getEventRankings(prevEvent);
+    const currRankings = getEventRankings(currEvent);
+    const prevRank = prevRankings.findIndex(r => r.name === player.name);
+    const currRank = currRankings.findIndex(r => r.name === player.name);
+    if (prevRank === 0 && currRank === currRankings.length - 1 && currRankings.length >= 2) {
+      hasHeelTurn = true;
+    }
+  }
+  if (hasHeelTurn) earned.push('heel-turn');
+
+  // ── GIANT KILLER (beat #1 ranked while bottom half in 3 events) ──
+  let giantKillCount = 0;
+  for (let i = 1; i < allOrderedEvents.length; i++) {
+    const currEvent = allOrderedEvents[i];
+    // Calculate cumulative standings before this event
+    const prevCumulative = {};
+    for (let j = 0; j < i; j++) {
+      const e = allOrderedEvents[j];
+      if (e.type === 'historical') {
+        const scores = historicalScores[e.name] || {};
+        Object.entries(scores).forEach(([n, s]) => {
+          prevCumulative[n] = (prevCumulative[n] || 0) + s;
+        });
+      } else {
+        allPlayers.forEach(p => {
+          prevCumulative[p.name] = (prevCumulative[p.name] || 0) + getEventScore(p, e);
+        });
+      }
+    }
+    const prevSorted = Object.entries(prevCumulative).sort(([, a], [, b]) => b - a);
+    if (prevSorted.length < 2) continue;
+    const topPlayer = prevSorted[0][0];
+    const playerGlobalRank = prevSorted.findIndex(([n]) => n === player.name);
+    const isBottomHalf = playerGlobalRank >= Math.floor(prevSorted.length / 2);
+    if (!isBottomHalf || topPlayer === player.name) continue;
+    // Check if player beat the top player in this event
+    const currRankings = getEventRankings(currEvent);
+    const playerEventRank = currRankings.findIndex(r => r.name === player.name);
+    const topEventRank = currRankings.findIndex(r => r.name === topPlayer);
+    if (playerEventRank !== -1 && topEventRank !== -1 && playerEventRank < topEventRank) {
+      giantKillCount++;
+    }
+  }
+  if (giantKillCount >= 3) earned.push('giant-killer');
+
+  // ── THE UNDERTAKER (win event with 10+ matches) ──
+  let hasUndertaker = false;
+  fbEvents.forEach(event => {
+    if (event.matches.length < 10) return;
+    const rankings = getEventRankings(event);
+    if (rankings.length > 0 && rankings[0].name === player.name) hasUndertaker = true;
+  });
+  if (!hasUndertaker) {
+    historicalEventNames.forEach(name => {
+      const total = historicalTotalMatches[name];
+      if (!total || total < 10) return;
+      const scores = historicalScores[name];
+      if (!scores || scores[player.name] === undefined) return;
+      const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a);
+      if (sorted[0][0] === player.name) hasUndertaker = true;
+    });
+  }
+  if (hasUndertaker) earned.push('the-undertaker');
+
+  // ── SIXTH SENSE (3+ correct picks no one else picked same winner) ──
+  let sixthSenseCount = 0;
+  fbEvents.forEach(event => {
+    event.matches.forEach(match => {
+      if (!match.winner) return;
+      const pick = player.picks?.[`${event.id}-${match.id}`];
+      if (pick !== match.winner) return;
+      // Did anyone else pick this winner?
+      const otherPickedWinner = allPlayers.some(p =>
+        p.name !== player.name && p.picks?.[`${event.id}-${match.id}`] === match.winner
+      );
+      if (!otherPickedWinner) sixthSenseCount++;
+    });
+  });
+  if (sixthSenseCount >= 3) earned.push('sixth-sense');
+
+  // ── STONE COLD LOCK (70%+ accuracy across 3 consecutive events) ──
+  let hasStoneCold = false;
+  const eventAccuracies = [];
+  allOrderedEvents.forEach(event => {
+    if (event.type === 'historical') {
+      const total = historicalTotalMatches[event.name];
+      const score = historicalScores[event.name]?.[player.name];
+      if (total && score !== undefined) {
+        eventAccuracies.push(score / total);
+      } else {
+        eventAccuracies.push(null);
+      }
+    } else {
+      const decided = event.matches?.filter(m => m.winner) || [];
+      if (decided.length === 0) { eventAccuracies.push(null); return; }
+      const hasPicks = Object.keys(player.picks || {}).some(k => k.startsWith(`${event.id}-`));
+      if (!hasPicks) { eventAccuracies.push(null); return; }
+      const correct = decided.filter(m => player.picks?.[`${event.id}-${m.id}`] === m.winner).length;
+      eventAccuracies.push(correct / decided.length);
+    }
+  });
+  for (let i = 0; i <= eventAccuracies.length - 3; i++) {
+    const three = eventAccuracies.slice(i, i + 3);
+    if (three.every(a => a !== null && a >= 0.7)) hasStoneCold = true;
+  }
+  if (hasStoneCold) earned.push('stone-cold-lock');
+
+  // ── IRONCLAD (never below 3rd in 5+ consecutive events) ──
+  let hasIronclad = false;
+  let ironcladStreak = 0;
+  allOrderedEvents.forEach(event => {
+    const rankings = getEventRankings(event);
+    const rank = rankings.findIndex(r => r.name === player.name);
+    if (rank !== -1 && rank < 3) {
+      ironcladStreak++;
+      if (ironcladStreak >= 5) hasIronclad = true;
+    } else {
+      ironcladStreak = 0;
+    }
+  });
+  if (hasIronclad) earned.push('ironclad');
+
   return earned;
 }
 
@@ -1028,6 +1562,12 @@ export function getPlayerBadges(player, allEvents, allPlayers) {
   const autoBadges = calculateEarnedBadges(player, allEvents, allPlayers);
   const manualBadges = player.manualBadges || [];
   const allBadgeIds = [...new Set([...autoBadges, ...manualBadges])];
+
+  // Check for The Collector meta-badge (20+ badges, not counting itself)
+  if (allBadgeIds.length >= 20 && !allBadgeIds.includes('the-collector')) {
+    allBadgeIds.push('the-collector');
+  }
+
   return allBadgeIds
     .map(id => getBadgeById(id))
     .filter(Boolean)

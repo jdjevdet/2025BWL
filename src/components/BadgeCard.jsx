@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, ClipboardCheck, ThumbsUp, CalendarCheck, Flame, ShieldCheck, Users, Fingerprint, Gem, TrendingUp, Swords, Medal, Eye, Castle, ShieldOff, Crown, Trophy, ArrowDownUp, Handshake, Scale, Baby, Timer, Crosshair, Zap, Moon, AlertTriangle, Sparkles, Search, Skull, Star, Brain, Infinity, Flag, Award, Bookmark, Briefcase, Sun, Snowflake } from 'lucide-react';
+import { Target, ClipboardCheck, ThumbsUp, CalendarCheck, Flame, ShieldCheck, Users, Fingerprint, Gem, TrendingUp, Swords, Medal, Eye, Castle, ShieldOff, Crown, Trophy, ArrowDownUp, Handshake, Scale, Baby, Timer, Crosshair, Zap, Moon, AlertTriangle, Sparkles, Search, Skull, Star, Brain, Infinity, Flag, Award, Bookmark, Briefcase, Sun, Snowflake, CircleX, Copy, Frown, CloudLightning, Heart, Bomb, RotateCcw, HeartCrack, Laugh, Hash, Tv, Mountain, Lock, Package, Shield } from 'lucide-react';
 import { RARITY_CONFIG } from '../utils/badges';
 
 const ICON_MAP = {
@@ -7,6 +7,7 @@ const ICON_MAP = {
   Gem, TrendingUp, Swords, Medal, Eye, Castle, ShieldOff, Crown, Trophy,
   ArrowDownUp, Handshake, Scale, Baby, Timer, Crosshair, Zap, Moon, AlertTriangle,
   Sparkles, Search, Skull, Star, Brain, Infinity, Flag, Award, Bookmark, Briefcase, Sun, Snowflake,
+  CircleX, Copy, Frown, CloudLightning, Heart, Bomb, RotateCcw, HeartCrack, Laugh, Hash, Tv, Mountain, Lock, Package, Shield,
 };
 
 const BadgeCard = ({ badge, size = 'md', onClick }) => {

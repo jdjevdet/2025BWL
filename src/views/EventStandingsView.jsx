@@ -10,6 +10,7 @@ const EventStandingsView = () => {
 
   if (!selectedEvent) return null;
   const isHistorical = historicalEventNames.includes(selectedEvent.name.toUpperCase());
+  const picksVisible = selectedEvent.status === 'live' || selectedEvent.status === 'completed' || isHistorical;
 
   const playerScores = useMemo(() => {
     let scores;
@@ -59,8 +60,8 @@ const EventStandingsView = () => {
             return (
               <div key={player.id} className="animate-fadeInUp" style={{ animationDelay: `${idx * 60}ms` }}>
                 <div
-                  onClick={() => setExpandedPlayer(isExpanded ? null : player.id)}
-                  className={`flex items-center gap-4 p-4 sm:p-5 rounded-xl transition-all cursor-pointer ${
+                  onClick={() => picksVisible && setExpandedPlayer(isExpanded ? null : player.id)}
+                  className={`flex items-center gap-4 p-4 sm:p-5 rounded-xl transition-all ${picksVisible ? 'cursor-pointer' : 'cursor-default'} ${
                     isTop3 ? rankStyles[idx] : 'border border-[--border] gold-border-glow'
                   } ${isExpanded && !isTop3 ? 'border-[--gold-dark]/40' : ''}`}
                   style={{ ...(!isTop3 ? { background: 'var(--bg-surface)' } : {}) }}
@@ -91,7 +92,7 @@ const EventStandingsView = () => {
                     <span className={`font-bebas text-3xl sm:text-4xl ${isTop3 ? 'text-white' : 'text-white'}`}>
                       {player.eventScore}
                     </span>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isTop3 ? 'text-white/60' : 'text-[--text-muted]'} ${isExpanded ? 'rotate-180' : ''}`} />
+                    {picksVisible && <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isTop3 ? 'text-white/60' : 'text-[--text-muted]'} ${isExpanded ? 'rotate-180' : ''}`} />}
                   </div>
                 </div>
 

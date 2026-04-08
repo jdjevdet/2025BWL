@@ -8,6 +8,23 @@ const EventPredictionsView = () => {
 
   if (!selectedEvent || !selectedEvent.matches) return null;
 
+  const picksVisible = selectedEvent.status === 'live' || selectedEvent.status === 'completed';
+
+  if (!picksVisible) {
+    return (
+      <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setCurrentView('home')} className="mb-8 text-[--text-muted] hover:text-white flex items-center gap-2 text-sm font-medium transition-all animate-fadeIn">
+            <ChevronRight className="w-4 h-4 rotate-180" /> Back to Events
+          </button>
+          <div className="text-center py-20 animate-fadeIn">
+            <p className="text-[--text-secondary] text-lg">Predictions will be revealed when the event goes live.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const predictions = selectedEvent.matches.map(match => {
     const picksByOption = match.options.reduce((acc, option) => { acc[option] = []; return acc; }, {});
     players.forEach(player => {

@@ -803,6 +803,110 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(201, 168, 76, 0.08);
 }
 
+/* ═══════════════════════════════════════════
+   WRESTLEMANIA TILE — GOLDEN AURA
+   ═══════════════════════════════════════════ */
+
+@keyframes wmGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 18px rgba(212, 175, 55, 0.45),
+      0 0 40px rgba(201, 168, 76, 0.25),
+      0 0 70px rgba(201, 168, 76, 0.15),
+      0 0 100px rgba(201, 168, 76, 0.06),
+      inset 0 0 25px rgba(201, 168, 76, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(228, 204, 122, 0.6),
+      0 0 55px rgba(212, 175, 55, 0.35),
+      0 0 90px rgba(201, 168, 76, 0.2),
+      0 0 120px rgba(201, 168, 76, 0.08),
+      inset 0 0 35px rgba(201, 168, 76, 0.08);
+  }
+}
+
+@keyframes wmBorderFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes wmSweep {
+  0% { transform: translateX(-200%) rotate(25deg); opacity: 0; }
+  30% { opacity: 0.8; }
+  100% { transform: translateX(350%) rotate(25deg); opacity: 0; }
+}
+
+.wrestlemania-tile {
+  animation: wmGlow 3s ease-in-out infinite !important;
+  border: 2px solid transparent !important;
+  position: relative;
+}
+
+/* Animated gold gradient border */
+.wrestlemania-tile::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    #5c4813, #8b6d2b, #c9a84c, #e4cc7a, #fff5c0, #e4cc7a, #c9a84c, #8b6d2b, #5c4813
+  );
+  background-size: 400% 400%;
+  animation: wmBorderFlow 3s ease-in-out infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Shimmer light sweep across tile */
+.wrestlemania-tile::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(228, 204, 122, 0.06),
+    rgba(255, 245, 192, 0.15),
+    rgba(228, 204, 122, 0.06),
+    transparent
+  );
+  animation: wmSweep 3.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.wrestlemania-tile:hover {
+  box-shadow:
+    0 0 30px rgba(212, 175, 55, 0.6),
+    0 0 70px rgba(201, 168, 76, 0.35),
+    0 0 110px rgba(201, 168, 76, 0.18),
+    0 0 150px rgba(201, 168, 76, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.5) !important;
+  border-color: transparent !important;
+}
+
+/* ═══════════════════════════════════════════
+   WRESTLEMANIA PYRO — CANVAS CONTAINER
+   ═══════════════════════════════════════════ */
+
+.wm-pyro-container {
+  position: absolute;
+  inset: -60px -40px;
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+}
+
 /* Profile hero gradient */
 .profile-hero-bg {
   background:

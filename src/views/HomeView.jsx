@@ -1,7 +1,219 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Trophy, Calendar, Target, Users, Activity } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import CountdownBadge from '../components/CountdownBadge';
+
+/* ── WrestleMania Canvas Pyro ── */
+const PYRO_COLORS = [
+  [255, 245, 192], // bright gold-white
+  [228, 204, 122], // gold
+  [212, 175, 55],  // deep gold
+  [251, 191, 36],  // amber
+  [245, 158, 11],  // orange-gold
+  [255, 255, 255], // white hot
+  [254, 243, 199], // cream
+  [253, 230, 138], // light gold
+  [239, 68, 68],   // red (for variety)
+  [249, 115, 22],  // orange
+];
+
+function launchPyro(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  const particles = [];
+  const GRAVITY = 0.12;
+  const DURATION = 4500; // 4.5 seconds total
+  const startTime = performance.now();
+
+  // Particle factory
+  function emit(x, y, vx, vy, size, color, life, type = 'spark') {
+    particles.push({ x, y, vx, vy, size, color, life, maxLife: life, type, trail: [] });
+  }
+
+  // ── Wave 1: Immediate top-edge pyro columns (like WWE stage gerbs) ──
+  const columns = 8;
+  for (let c = 0; c < columns; c++) {
+    const cx = (W / (columns + 1)) * (c + 1);
+    for (let i = 0; i < 25; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+      const speed = 4 + Math.random() * 7;
+      const color = PYRO_COLORS[Math.floor(Math.random() * PYRO_COLORS.length)];
+      emit(cx, H * 0.02, Math.cos(angle) * speed, Math.sin(angle) * speed,
+        2 + Math.random() * 3, color, 60 + Math.random() * 50, 'spark');
+    }
+  }
+
+  // ── Wave 1b: Corner mortar bursts ──
+  for (const cx of [W * 0.05, W * 0.95]) {
+    for (let i = 0; i < 30; i++) {
+      const angle = -Math.PI / 2 + (cx < W / 2 ? 0.3 : -0.3) + (Math.random() - 0.5) * 0.8;
+      const speed = 5 + Math.random() * 6;
+      const color = PYRO_COLORS[Math.floor(Math.random() * 8)];
+      emit(cx, H * 0.3, Math.cos(angle) * speed, Math.sin(angle) * speed,
+        2.5 + Math.random() * 3, color, 50 + Math.random() * 40, 'spark');
+    }
+  }
+
+  // Delayed waves
+  let wave2Fired = false;
+  let wave3Fired = false;
+
+  function spawnWave2() {
+    // ── Wave 2: Golden shower / waterfall from top (delayed 600ms) ──
+    for (let i = 0; i < 120; i++) {
+      const x = Math.random() * W;
+      const color = PYRO_COLORS[Math.floor(Math.random() * 8)];
+      emit(x, -5, (Math.random() - 0.5) * 2, 1.5 + Math.random() * 3,
+        1.5 + Math.random() * 2.5, color, 70 + Math.random() * 50, 'shower');
+    }
+  }
+
+  function spawnWave3() {
+    // ── Wave 3: Side fountain bursts (delayed 1200ms) ──
+    for (const cx of [0, W]) {
+      const dir = cx === 0 ? 1 : -1;
+      for (let i = 0; i < 35; i++) {
+        const angle = -Math.PI / 2 + dir * (0.2 + Math.random() * 0.6);
+        const speed = 3 + Math.random() * 5;
+        const color = PYRO_COLORS[Math.floor(Math.random() * PYRO_COLORS.length)];
+        emit(cx, H * 0.1 + Math.random() * H * 0.3,
+          Math.cos(angle) * speed, Math.sin(angle) * speed,
+          2 + Math.random() * 2.5, color, 50 + Math.random() * 40, 'spark');
+      }
+    }
+  }
+
+  function draw(now) {
+    const elapsed = now - startTime;
+    if (elapsed > DURATION && particles.length === 0) {
+      ctx.clearRect(0, 0, W, H);
+      return; // done
+    }
+
+    // Spawn delayed waves
+    if (!wave2Fired && elapsed > 600) { wave2Fired = true; spawnWave2(); }
+    if (!wave3Fired && elapsed > 1200) { wave3Fired = true; spawnWave3(); }
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Flash bang on frame 1-10
+    if (elapsed < 300) {
+      const flashAlpha = Math.max(0, 0.6 * (1 - elapsed / 300));
+      const grad = ctx.createRadialGradient(W / 2, H * 0.2, 0, W / 2, H * 0.2, W * 0.8);
+      grad.addColorStop(0, `rgba(255, 245, 192, ${flashAlpha})`);
+      grad.addColorStop(0.4, `rgba(212, 175, 55, ${flashAlpha * 0.5})`);
+      grad.addColorStop(1, 'rgba(212, 175, 55, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life--;
+
+      // Store trail positions
+      p.trail.push({ x: p.x, y: p.y });
+      if (p.trail.length > 6) p.trail.shift();
+
+      // Physics
+      p.vy += GRAVITY;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Drag
+      p.vx *= 0.985;
+      p.vy *= 0.985;
+
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+      const alpha = Math.min(1, p.life / (p.maxLife * 0.3));
+      const [r, g, b] = p.color;
+
+      // Draw trail
+      if (p.trail.length > 1) {
+        for (let t = 0; t < p.trail.length - 1; t++) {
+          const trailAlpha = alpha * (t / p.trail.length) * 0.4;
+          const trailSize = p.size * (t / p.trail.length) * 0.6;
+          ctx.beginPath();
+          ctx.arc(p.trail[t].x, p.trail[t].y, trailSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${trailAlpha})`;
+          ctx.fill();
+        }
+      }
+
+      // Draw glow
+      const glowSize = p.size * 3;
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+      glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`);
+      glow.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.15})`);
+      glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      ctx.fillStyle = glow;
+      ctx.fillRect(p.x - glowSize, p.y - glowSize, glowSize * 2, glowSize * 2);
+
+      // Draw core
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      ctx.fill();
+
+      // White-hot center for bigger sparks
+      if (p.size > 3) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
+        ctx.fill();
+      }
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+}
+
+const WrestleManiaPyro = () => {
+  const canvasRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const hasFired = useRef(false);
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    const canvas = canvasRef.current;
+    if (!wrapper || !canvas) return;
+
+    // Size canvas to the expanded pyro area (extends beyond tile)
+    const resize = () => {
+      const rect = wrapper.getBoundingClientRect();
+      canvas.width = rect.width * 2;   // 2x for retina sharpness
+      canvas.height = rect.height * 2;
+    };
+    resize();
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasFired.current) {
+          hasFired.current = true;
+          resize();
+          launchPyro(canvas);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(wrapper);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="wm-pyro-container">
+      <canvas
+        ref={canvasRef}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+      />
+    </div>
+  );
+};
 
 const HomeView = () => {
   const { sortedEvents, setSelectedEvent, setCurrentView, selectedSeason, setSelectedSeason } = useApp();
@@ -50,13 +262,15 @@ const HomeView = () => {
               upcoming: { dot: 'status-dot-upcoming', label: 'Upcoming', color: 'text-slate-400' },
             };
             const sc = statusConfig[event.status] || statusConfig.upcoming;
+            const isWrestleMania = event.name && event.name.toUpperCase().includes('WRESTLEMANIA');
 
             return (
               <div
                 key={event.id}
-                className="group rounded-xl overflow-hidden border border-[--border] gold-border-glow hover-lift card-gold-accent animate-fadeInUp flex flex-col"
+                className={`group rounded-xl overflow-hidden border border-[--border] gold-border-glow hover-lift card-gold-accent animate-fadeInUp flex flex-col${isWrestleMania ? ' wrestlemania-tile' : ''}`}
                 style={{ background: 'var(--bg-surface)', animationDelay: `${idx * 80}ms` }}
               >
+                {isWrestleMania && <WrestleManiaPyro />}
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden spotlight-overlay" style={{ background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-deep))' }}>
                   {event.bannerImage ? (

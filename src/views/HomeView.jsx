@@ -23,7 +23,7 @@ function launchPyro(canvas) {
   const H = canvas.height;
   const particles = [];
   const GRAVITY = 0.12;
-  const DURATION = 4500; // 4.5 seconds total
+  const DURATION = 15000; // 15 seconds
   const startTime = performance.now();
 
   // Particle factory
@@ -31,37 +31,38 @@ function launchPyro(canvas) {
     particles.push({ x, y, vx, vy, size, color, life, maxLife: life, type, trail: [] });
   }
 
-  // ── Wave 1: Immediate top-edge pyro columns (like WWE stage gerbs) ──
-  const columns = 8;
-  for (let c = 0; c < columns; c++) {
-    const cx = (W / (columns + 1)) * (c + 1);
-    for (let i = 0; i < 25; i++) {
-      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
-      const speed = 4 + Math.random() * 7;
-      const color = PYRO_COLORS[Math.floor(Math.random() * PYRO_COLORS.length)];
-      emit(cx, H * 0.02, Math.cos(angle) * speed, Math.sin(angle) * speed,
-        2 + Math.random() * 3, color, 60 + Math.random() * 50, 'spark');
+  // Helper: spawn a row of pyro columns across the top
+  function spawnColumns(count, intensity) {
+    for (let c = 0; c < count; c++) {
+      const cx = (W / (count + 1)) * (c + 1);
+      const n = Math.floor(15 + intensity * 15);
+      for (let i = 0; i < n; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+        const speed = (3 + Math.random() * 5) * intensity;
+        const color = PYRO_COLORS[Math.floor(Math.random() * PYRO_COLORS.length)];
+        emit(cx, H * 0.02, Math.cos(angle) * speed, Math.sin(angle) * speed,
+          2 + Math.random() * 3, color, 60 + Math.random() * 50, 'spark');
+      }
     }
   }
 
-  // ── Wave 1b: Corner mortar bursts ──
-  for (const cx of [W * 0.05, W * 0.95]) {
-    for (let i = 0; i < 30; i++) {
-      const angle = -Math.PI / 2 + (cx < W / 2 ? 0.3 : -0.3) + (Math.random() - 0.5) * 0.8;
-      const speed = 5 + Math.random() * 6;
-      const color = PYRO_COLORS[Math.floor(Math.random() * 8)];
-      emit(cx, H * 0.3, Math.cos(angle) * speed, Math.sin(angle) * speed,
-        2.5 + Math.random() * 3, color, 50 + Math.random() * 40, 'spark');
+  // Helper: spawn corner mortar bursts
+  function spawnCornerMortars(intensity) {
+    for (const cx of [W * 0.05, W * 0.95]) {
+      const n = Math.floor(20 + intensity * 20);
+      for (let i = 0; i < n; i++) {
+        const angle = -Math.PI / 2 + (cx < W / 2 ? 0.3 : -0.3) + (Math.random() - 0.5) * 0.8;
+        const speed = (4 + Math.random() * 5) * intensity;
+        const color = PYRO_COLORS[Math.floor(Math.random() * 8)];
+        emit(cx, H * 0.3, Math.cos(angle) * speed, Math.sin(angle) * speed,
+          2.5 + Math.random() * 3, color, 50 + Math.random() * 40, 'spark');
+      }
     }
   }
 
-  // Delayed waves
-  let wave2Fired = false;
-  let wave3Fired = false;
-
-  function spawnWave2() {
-    // ── Wave 2: Golden shower / waterfall from top (delayed 600ms) ──
-    for (let i = 0; i < 120; i++) {
+  // Helper: golden shower rain from top
+  function spawnShower(count) {
+    for (let i = 0; i < count; i++) {
       const x = Math.random() * W;
       const color = PYRO_COLORS[Math.floor(Math.random() * 8)];
       emit(x, -5, (Math.random() - 0.5) * 2, 1.5 + Math.random() * 3,
@@ -69,13 +70,14 @@ function launchPyro(canvas) {
     }
   }
 
-  function spawnWave3() {
-    // ── Wave 3: Side fountain bursts (delayed 1200ms) ──
+  // Helper: side fountain bursts
+  function spawnSideFountains(intensity) {
     for (const cx of [0, W]) {
       const dir = cx === 0 ? 1 : -1;
-      for (let i = 0; i < 35; i++) {
+      const n = Math.floor(20 + intensity * 25);
+      for (let i = 0; i < n; i++) {
         const angle = -Math.PI / 2 + dir * (0.2 + Math.random() * 0.6);
-        const speed = 3 + Math.random() * 5;
+        const speed = (3 + Math.random() * 4) * intensity;
         const color = PYRO_COLORS[Math.floor(Math.random() * PYRO_COLORS.length)];
         emit(cx, H * 0.1 + Math.random() * H * 0.3,
           Math.cos(angle) * speed, Math.sin(angle) * speed,
@@ -84,6 +86,56 @@ function launchPyro(canvas) {
     }
   }
 
+  // Helper: center starburst explosion
+  function spawnStarburst(cx, cy, count, power) {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.3;
+      const speed = 2 + Math.random() * power;
+      const color = PYRO_COLORS[Math.floor(Math.random() * PYRO_COLORS.length)];
+      emit(cx, cy, Math.cos(angle) * speed, Math.sin(angle) * speed,
+        2 + Math.random() * 3.5, color, 55 + Math.random() * 45, 'spark');
+    }
+  }
+
+  // ── WAVE SCHEDULE (15 seconds of pyro) ──
+  // Each entry: [triggerMs, spawnFunction]
+  const waves = [
+    // 0s — Opening blast: big columns + corner mortars
+    [0, () => { spawnColumns(8, 1.2); spawnCornerMortars(1.2); }],
+    // 0.6s — Golden rain
+    [600, () => spawnShower(120)],
+    // 1.2s — Side fountains
+    [1200, () => spawnSideFountains(1.0)],
+    // 2.5s — Second column burst
+    [2500, () => spawnColumns(6, 1.0)],
+    // 3.5s — Starburst from center
+    [3500, () => spawnStarburst(W / 2, H * 0.35, 50, 6)],
+    // 4.5s — Heavy golden shower
+    [4500, () => spawnShower(150)],
+    // 5.5s — Corner mortars + side fountains
+    [5500, () => { spawnCornerMortars(1.1); spawnSideFountains(0.9); }],
+    // 6.8s — Twin starbursts
+    [6800, () => { spawnStarburst(W * 0.25, H * 0.3, 35, 5); spawnStarburst(W * 0.75, H * 0.3, 35, 5); }],
+    // 8.0s — Big columns
+    [8000, () => spawnColumns(10, 1.0)],
+    // 9.0s — Shower + side fountains
+    [9000, () => { spawnShower(100); spawnSideFountains(0.8); }],
+    // 10.5s — Triple starburst
+    [10500, () => { spawnStarburst(W * 0.2, H * 0.25, 30, 5); spawnStarburst(W / 2, H * 0.4, 40, 6); spawnStarburst(W * 0.8, H * 0.25, 30, 5); }],
+    // 11.5s — Corner mortars
+    [11500, () => spawnCornerMortars(1.3)],
+    // 12.5s — Grand finale ramp-up: columns + shower
+    [12500, () => { spawnColumns(10, 1.3); spawnShower(130); }],
+    // 13.5s — Finale: everything at once
+    [13500, () => { spawnColumns(12, 1.5); spawnCornerMortars(1.5); spawnSideFountains(1.3); spawnStarburst(W / 2, H * 0.3, 60, 7); spawnShower(160); }],
+  ];
+
+  let nextWave = 0;
+
+  // Fire wave 0 immediately
+  waves[0][1]();
+  nextWave = 1;
+
   function draw(now) {
     const elapsed = now - startTime;
     if (elapsed > DURATION && particles.length === 0) {
@@ -91,9 +143,11 @@ function launchPyro(canvas) {
       return; // done
     }
 
-    // Spawn delayed waves
-    if (!wave2Fired && elapsed > 600) { wave2Fired = true; spawnWave2(); }
-    if (!wave3Fired && elapsed > 1200) { wave3Fired = true; spawnWave3(); }
+    // Spawn waves as their time arrives
+    while (nextWave < waves.length && elapsed >= waves[nextWave][0]) {
+      waves[nextWave][1]();
+      nextWave++;
+    }
 
     ctx.clearRect(0, 0, W, H);
 

@@ -112,7 +112,7 @@ const MakePicksView = () => {
                             {pinMode === 'verify' ? 'Enter your 4-digit PIN' : 'Create a 4-digit PIN to protect your picks'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 max-w-xs mx-auto">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xs mx-auto">
                           <input
                             type="password"
                             inputMode="numeric"
@@ -129,7 +129,7 @@ const MakePicksView = () => {
                           />
                           <button
                             onClick={() => handlePinSubmit(selectedPlayer)}
-                            className="btn-gold px-5 py-2.5 rounded-lg text-sm font-bold flex-shrink-0"
+                            className="btn-gold px-5 py-2.5 rounded-lg text-sm font-bold"
                           >
                             {pinMode === 'verify' ? 'Go' : 'Set PIN'}
                           </button>

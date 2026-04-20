@@ -27,6 +27,7 @@ export const AppProvider = ({ children }) => {
   const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
   const [editingEvent, setEditingEvent] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState('2025/2026');
+  const [banner, setBanner] = useState(null);
 
   // Firebase subscriptions
   useEffect(() => {
@@ -39,7 +40,11 @@ export const AppProvider = ({ children }) => {
     const unsubscribeHoF = onSnapshot(collection(db, "hallOfFame"), (snapshot) => {
       setHallOfFameEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    return () => { unsubscribeEvents(); unsubscribePlayers(); unsubscribeHoF(); };
+    const unsubscribeBanner = onSnapshot(doc(db, "settings", "banner"), (docSnap) => {
+      if (docSnap.exists()) setBanner(docSnap.data());
+      else setBanner(null);
+    });
+    return () => { unsubscribeEvents(); unsubscribePlayers(); unsubscribeHoF(); unsubscribeBanner(); };
   }, []);
 
   const allSortedEvents = useMemo(() => [...events].sort((a, b) => {
@@ -321,6 +326,17 @@ export const AppProvider = ({ children }) => {
     } catch (error) { console.error("Error awarding badge:", error); alert("Failed to award badge."); }
   };
 
+  const updateBanner = async (message) => {
+    if (!isAdmin) return;
+    try {
+      if (message && message.trim()) {
+        await setDoc(doc(db, "settings", "banner"), { message: message.trim(), active: true });
+      } else {
+        await setDoc(doc(db, "settings", "banner"), { message: '', active: false });
+      }
+    } catch (error) { console.error("Error updating banner:", error); alert("Failed to update banner."); }
+  };
+
   const revokeBadge = async (playerId, badgeId) => {
     const player = players.find(p => p.id === playerId);
     if (!player) return;
@@ -353,6 +369,7 @@ export const AppProvider = ({ children }) => {
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
     selectedPlayerName, setSelectedPlayerName, navigateToPlayer,
     awardBadge, revokeBadge,
+    banner, updateBanner,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Trophy, Calendar, Target, Users, Activity } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Trophy, Calendar, Target, Users, Activity, Megaphone, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import CountdownBadge from '../components/CountdownBadge';
 
@@ -269,12 +269,92 @@ const WrestleManiaPyro = () => {
   );
 };
 
+/* ── Announcement Banner ── */
+const AnnouncementBanner = ({ message }) => {
+  const [visible, setVisible] = useState(true);
+  const [exiting, setExiting] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setExiting(true);
+      setTimeout(() => setVisible(false), 600);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div className={`fixed top-16 left-0 right-0 z-40 flex justify-center px-4 py-3 pointer-events-none ${exiting ? 'banner-exit' : 'banner-enter'}`}>
+      <div
+        className="relative max-w-2xl w-full rounded-2xl overflow-hidden pointer-events-auto shadow-2xl"
+        style={{
+          background: 'linear-gradient(135deg, #064e3b, #065f46, #047857)',
+          border: '1px solid rgba(52, 211, 153, 0.35)',
+          boxShadow: '0 0 40px rgba(16, 185, 129, 0.2), 0 0 80px rgba(16, 185, 129, 0.08), 0 20px 60px rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        {/* Animated shimmer sweep */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute top-0 left-0 w-1/3 h-full opacity-15"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(167, 243, 208, 0.6), transparent)',
+              animation: 'bannerSweep 3s ease-in-out infinite',
+            }}
+          />
+        </div>
+
+        {/* Top accent bar */}
+        <div className="h-0.5" style={{ background: 'linear-gradient(90deg, #34d399, #6ee7b7, #a7f3d0, #6ee7b7, #34d399)', backgroundSize: '200% 100%', animation: 'shimmer 3s ease-in-out infinite' }} />
+
+        <div className="relative px-5 py-4 flex items-center gap-4">
+          {/* Icon */}
+          <div
+            className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(167, 243, 208, 0.12)', border: '1px solid rgba(110, 231, 183, 0.2)' }}
+          >
+            <Megaphone className="w-5 h-5 text-emerald-300" />
+          </div>
+
+          {/* Message */}
+          <p className="flex-1 text-emerald-50 font-outfit font-semibold text-sm sm:text-base leading-snug">
+            {message}
+          </p>
+
+          {/* Close button */}
+          <button
+            onClick={() => { setExiting(true); setTimeout(() => setVisible(false), 600); }}
+            className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-emerald-300/60 hover:text-emerald-100 hover:bg-emerald-400/10 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Progress bar — 10 second countdown */}
+        <div className="h-0.5 w-full" style={{ background: 'rgba(0,0,0,0.2)' }}>
+          <div
+            className="h-full rounded-full"
+            style={{
+              background: 'linear-gradient(90deg, #34d399, #6ee7b7)',
+              animation: 'bannerCountdown 10s linear forwards',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const HomeView = () => {
-  const { sortedEvents, setSelectedEvent, setCurrentView, selectedSeason, setSelectedSeason } = useApp();
+  const { sortedEvents, setSelectedEvent, setCurrentView, selectedSeason, setSelectedSeason, banner } = useApp();
 
   return (
     <div className="min-h-screen arena-bg pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        {/* Announcement Banner */}
+        {banner?.active && banner?.message && <AnnouncementBanner key={banner.message} message={banner.message} />}
+
         {/* Hero */}
         <div className="text-center mb-16 animate-fadeInUp">
           <h1 className="font-bebas text-6xl sm:text-8xl lg:text-9xl tracking-tight leading-none mb-4">

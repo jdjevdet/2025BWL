@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Plus, Edit2, Trash2, Save, Award, Users, ChevronUp, ChevronDown, X, Shield, Camera, KeyRound, Crown, Swords } from 'lucide-react';
+import { Trophy, Plus, Edit2, Trash2, Save, Award, Users, ChevronUp, ChevronDown, X, Shield, Camera, KeyRound, Crown, Swords, Megaphone } from 'lucide-react';
 import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -813,6 +813,66 @@ const HallOfFameManagement = () => {
 };
 
 /* ──────────────────────────────────────────────
+   Banner Management
+   ────────────────────────────────────────────── */
+const BannerManagement = () => {
+  const { banner, updateBanner } = useApp();
+  const [bannerInput, setBannerInput] = useState(banner?.message || '');
+  const isActive = banner?.active && banner?.message;
+
+  useEffect(() => {
+    setBannerInput(banner?.message || '');
+  }, [banner?.message]);
+
+  return (
+    <div className="mb-6 rounded-xl border border-emerald-500/20 overflow-hidden" style={{ background: 'var(--bg-surface)' }}>
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-emerald-500/10" style={{ background: 'rgba(16, 185, 129, 0.04)' }}>
+        <Megaphone className="w-4 h-4 text-emerald-400" />
+        <h3 className="font-bebas text-lg tracking-wide text-white">Announcement Banner</h3>
+        {isActive && (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-emerald-500/30 text-emerald-400" style={{ background: 'rgba(16, 185, 129, 0.08)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live
+          </span>
+        )}
+      </div>
+      <div className="p-5">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Enter announcement message..."
+            value={bannerInput}
+            onChange={(e) => setBannerInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && updateBanner(bannerInput)}
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-white placeholder-[--text-muted] border border-[--border] transition-all"
+            style={{ background: 'var(--bg-input)' }}
+          />
+          <button
+            onClick={() => updateBanner(bannerInput)}
+            className="px-4 py-2.5 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all"
+          >
+            {isActive ? 'Update' : 'Launch'}
+          </button>
+          {isActive && (
+            <button
+              onClick={() => { updateBanner(''); setBannerInput(''); }}
+              className="px-4 py-2.5 rounded-lg text-sm font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        {isActive && (
+          <p className="text-emerald-400/70 text-xs mt-2">
+            Currently showing: &ldquo;{banner.message}&rdquo;
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ──────────────────────────────────────────────
    Admin View (main)
    ────────────────────────────────────────────── */
 const AdminView = () => {
@@ -841,6 +901,8 @@ const AdminView = () => {
             New Event
           </button>
         </div>
+
+        <BannerManagement />
 
         <div className="flex items-center gap-2 mb-6">
           {['2025/2026', '2026/2027'].map(season => (

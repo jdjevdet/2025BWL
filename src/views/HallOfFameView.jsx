@@ -3,23 +3,24 @@ import { Trophy, Award, Star, Crown, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 /* ──────────────────────────────────────────────
-   Inductee Card — prestigious winner display
+   Inductee Card — uniform winner display
    ────────────────────────────────────────────── */
 const InducteeCard = ({ entry, index, isLatest, category }) => {
   const isPredictamania = category === 'mr-predictamania';
 
-  if (isLatest) {
-    return (
-      <div
-        className="relative rounded-2xl overflow-hidden animate-fadeInUp"
-        style={{
-          background: 'var(--bg-surface)',
-          border: isPredictamania ? '2px solid var(--gold-dark)' : '1px solid var(--border-light)',
-          animationDelay: `${index * 120}ms`,
-        }}
-      >
-        {/* Spotlight sweep */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+  return (
+    <div
+      className={`group relative rounded-2xl overflow-hidden animate-fadeInUp flex flex-col ${
+        isLatest ? 'ring-2 ring-[--gold]/60 shadow-lg shadow-[--gold-glow]' : 'border border-[--border] gold-border-glow'
+      } hover-lift`}
+      style={{
+        background: 'var(--bg-surface)',
+        animationDelay: `${index * 100}ms`,
+      }}
+    >
+      {/* Spotlight sweep on reigning champ */}
+      {isLatest && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
           <div
             className="absolute top-0 left-0 w-1/3 h-full opacity-10"
             style={{
@@ -28,104 +29,74 @@ const InducteeCard = ({ entry, index, isLatest, category }) => {
             }}
           />
         </div>
+      )}
 
-        {/* Gold top bar */}
-        <div className="h-1 gold-bar-shimmer" />
+      {/* Gold top bar for reigning champ */}
+      {isLatest && <div className="h-1 gold-bar-shimmer" />}
 
-        <div className="p-6 sm:p-10">
-          <div className="text-center mb-6">
-            <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-[--gold]">
-              <Star className="w-3 h-3" /> Reigning Champion <Star className="w-3 h-3" />
-            </span>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-            {/* Image */}
-            <div className="md:w-1/2 w-full">
-              {entry.imageUrl ? (
-                <div className="relative rounded-xl overflow-hidden hof-image-frame group">
-                  <img
-                    src={entry.imageUrl}
-                    alt={entry.title}
-                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                  {/* Corner accents */}
-                  <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-[--gold]/40 rounded-tl-xl" />
-                  <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-[--gold]/40 rounded-tr-xl" />
-                  <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-[--gold]/40 rounded-bl-xl" />
-                  <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-[--gold]/40 rounded-br-xl" />
-                </div>
-              ) : (
-                <div className="w-full h-64 rounded-xl flex items-center justify-center" style={{ background: 'var(--bg-elevated)' }}>
-                  {isPredictamania
-                    ? <Crown className="w-20 h-20 text-[--gold]/30" />
-                    : <Trophy className="w-20 h-20 text-[--gold]/30" />}
-                </div>
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="md:w-1/2 text-center md:text-left">
-              {entry.season && (
-                <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-[--gold] border border-[--gold-dark]/40 mb-4"
-                  style={{ background: 'rgba(201, 168, 76, 0.06)' }}>
-                  Season {entry.season}
-                </span>
-              )}
-              <h3 className="font-bebas text-5xl sm:text-6xl text-white tracking-wide mb-2 leading-none">
-                {entry.title}
-              </h3>
-              {entry.description && (
-                <p className="text-lg text-[--text-secondary] font-outfit mt-3 leading-relaxed">
-                  {entry.description}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Past winners — compact card
-  return (
-    <div
-      className="group rounded-xl overflow-hidden border border-[--border] gold-border-glow hover-lift animate-fadeInUp flex flex-col"
-      style={{ background: 'var(--bg-surface)', animationDelay: `${index * 100}ms` }}
-    >
-      <div className="relative h-56 overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+      {/* Image area — consistent aspect ratio */}
+      <div className="relative aspect-[4/3] overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
         {entry.imageUrl ? (
           <img
             src={entry.imageUrl}
             alt={entry.title}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             {isPredictamania
-              ? <Crown className="w-14 h-14 text-[--text-muted]/40" />
-              : <Trophy className="w-14 h-14 text-[--text-muted]/40" />}
+              ? <Crown className="w-16 h-16 text-[--text-muted]/30" />
+              : <Trophy className="w-16 h-16 text-[--text-muted]/30" />}
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[--bg-surface] via-transparent to-transparent opacity-90" />
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[--bg-surface] via-black/20 to-transparent" />
+
+        {/* Season badge */}
         {entry.season && (
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 z-10">
             <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider glass-card text-[--gold]">
               {entry.season}
             </span>
           </div>
         )}
-        <div className="absolute bottom-3 left-3">
+
+        {/* Reigning champion badge */}
+        {isLatest && (
+          <div className="absolute top-3 left-3 z-10">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider text-[--gold]"
+              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
+              <Star className="w-3 h-3" /> Reigning
+            </span>
+          </div>
+        )}
+
+        {/* Icon */}
+        <div className="absolute bottom-3 left-3 z-10">
           {isPredictamania
             ? <Crown className="w-6 h-6 text-[--gold]" style={{ animation: 'float 3s ease-in-out infinite' }} />
             : <Award className="w-6 h-6 text-[--gold]" style={{ animation: 'float 3s ease-in-out infinite' }} />}
         </div>
+
+        {/* Corner accents for reigning champ */}
+        {isLatest && (
+          <>
+            <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-[--gold]/40 z-10" />
+            <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 border-[--gold]/40 z-10" />
+            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 border-[--gold]/40 z-10" />
+            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-[--gold]/40 z-10" />
+          </>
+        )}
       </div>
+
+      {/* Info */}
       <div className="p-5 text-center flex-1 flex flex-col justify-center">
-        <h4 className="font-bebas text-2xl text-white tracking-wide">{entry.title}</h4>
+        <h4 className={`font-bebas tracking-wide text-white leading-none ${isLatest ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>
+          {entry.title}
+        </h4>
         {entry.description && (
-          <p className="text-[--text-secondary] text-sm mt-1.5 font-outfit">{entry.description}</p>
+          <p className="text-[--text-secondary] text-sm mt-2 font-outfit leading-relaxed">{entry.description}</p>
         )}
       </div>
     </div>
@@ -138,8 +109,6 @@ const InducteeCard = ({ entry, index, isLatest, category }) => {
 const CategorySection = ({ title, subtitle, icon: Icon, entries, accentClass }) => {
   // Sort by season descending so latest is first
   const sorted = [...entries].sort((a, b) => (b.season || '').localeCompare(a.season || ''));
-  const latest = sorted[0];
-  const past = sorted.slice(1);
 
   return (
     <div className="mb-20 last:mb-0">
@@ -161,38 +130,17 @@ const CategorySection = ({ title, subtitle, icon: Icon, entries, accentClass }) 
           <p className="text-[--text-muted] text-sm font-outfit">No inductees yet. The throne awaits.</p>
         </div>
       ) : (
-        <>
-          {/* Latest winner — hero treatment */}
-          {latest && (
-            <div className="mb-8">
-              <InducteeCard entry={latest} index={0} isLatest={true} category={latest.category} />
-            </div>
-          )}
-
-          {/* Past winners — grid */}
-          {past.length > 0 && (
-            <>
-              <div className="text-center mb-6 mt-12">
-                <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[--text-muted]">
-                  <span className="w-8 h-px bg-[--border-light]" />
-                  Previous Champions
-                  <span className="w-8 h-px bg-[--border-light]" />
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {past.map((entry, idx) => (
-                  <InducteeCard
-                    key={entry.id}
-                    entry={entry}
-                    index={idx + 1}
-                    isLatest={false}
-                    category={entry.category}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sorted.map((entry, idx) => (
+            <InducteeCard
+              key={entry.id}
+              entry={entry}
+              index={idx}
+              isLatest={idx === 0}
+              category={entry.category}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

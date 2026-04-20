@@ -23,7 +23,8 @@ const LiveResultsView = () => {
           if (match.winner && player.picks?.[pickKey] === match.winner) score += 1;
         });
       }
-      return { ...player, eventScore: score };
+      const eventBonus = player.eventBonusPoints?.[liveEvent.id] || 0;
+      return { ...player, eventScore: score + eventBonus };
     }).sort((a, b) => b.eventScore - a.eventScore);
   }, [liveEvent, players]);
 

@@ -239,6 +239,16 @@ export const AppProvider = ({ children }) => {
     } catch (error) { console.error("Error adjusting bonus points: ", error); alert("Failed to adjust points."); }
   };
 
+  const adjustEventBonusPoints = async (playerId, eventId, adjustment) => {
+    if (!isAdmin) { alert("Only admins can adjust points."); return; }
+    const player = players.find(p => p.id === playerId);
+    if (!player) { alert("Player not found."); return; }
+    try {
+      const current = player.eventBonusPoints?.[eventId] || 0;
+      await setDoc(doc(db, "players", playerId), { eventBonusPoints: { ...player.eventBonusPoints, [eventId]: current + adjustment } }, { merge: true });
+    } catch (error) { console.error("Error adjusting event bonus points: ", error); alert("Failed to adjust points."); }
+  };
+
   const uploadAvatar = async (playerId, file) => {
     if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2MB."); return; }
     setAvatarUploading(true);
@@ -338,7 +348,7 @@ export const AppProvider = ({ children }) => {
     handlePicksSubmitted, resetPlayerPick, resetAllPlayerPicks,
     handleAdminLogin, createNewEvent, updateEvent, deleteEvent,
     addMatch, addOptionToMatch, submitPick,
-    deletePlayer, addPlayer, adjustBonusPoints,
+    deletePlayer, addPlayer, adjustBonusPoints, adjustEventBonusPoints,
     uploadAvatar, removeAvatar,
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
     selectedPlayerName, setSelectedPlayerName, navigateToPlayer,

@@ -69,7 +69,7 @@ const AddMatchForm = ({ eventId, onAddMatch }) => {
 const EventEditorCard = ({
   event, isEditing, onSave, onSetEditing, onDelete, onUpdateEvent,
   onAddMatch, onAddOptionToMatch, onResetPlayerPick, onResetAllPlayerPicks,
-  players, animationDelay, isMinimized, onToggleMinimize,
+  onAdjustEventBonusPoints, players, animationDelay, isMinimized, onToggleMinimize,
 }) => {
   const [localData, setLocalData] = useState(event);
   const [addingOptionToMatch, setAddingOptionToMatch] = useState(null);
@@ -271,6 +271,45 @@ const EventEditorCard = ({
             </div>
             {isEditing && <AddMatchForm eventId={event.id} onAddMatch={onAddMatch} />}
           </div>
+
+          {/* Per-event bonus points */}
+          {(event.status === 'completed' || event.status === 'live') && players && players.length > 0 && (
+            <div className="mt-6 p-4 rounded-lg border border-[--gold-dark]/20" style={{ background: 'rgba(201, 168, 76, 0.04)' }}>
+              <h4 className="font-outfit font-semibold text-xs uppercase tracking-widest text-[--gold] mb-3 flex items-center gap-2">
+                <Trophy className="w-3.5 h-3.5" /> Event Bonus Points
+              </h4>
+              <div className="space-y-1.5">
+                {players.map(player => {
+                  const eventBonus = player.eventBonusPoints?.[event.id] || 0;
+                  return (
+                    <div key={player.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg" style={{ background: 'var(--bg-elevated)' }}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <PlayerAvatar player={player} size="xs" />
+                        <span className="text-white text-sm font-medium truncate">{player.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {eventBonus !== 0 && (
+                          <span className={`text-xs font-bold ${eventBonus > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {eventBonus > 0 ? '+' : ''}{eventBonus}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            onClick={() => onAdjustEventBonusPoints(player.id, event.id, -1)}
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all"
+                          >-</button>
+                          <button
+                            onClick={() => onAdjustEventBonusPoints(player.id, event.id, 1)}
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                          >+</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {event.status === 'open' && players && players.length > 0 && (
             <div className="mt-6 p-4 rounded-lg border border-red-500/20" style={{ background: 'rgba(239, 35, 60, 0.04)' }}>
@@ -780,7 +819,7 @@ const AdminView = () => {
   const {
     sortedEvents, allSortedEvents, players, editingEvent, setEditingEvent, minimizedEvents, toggleMinimizeEvent,
     createNewEvent, updateEvent, deleteEvent, addMatch, addOptionToMatch,
-    resetPlayerPick, resetAllPlayerPicks, selectedSeason, setSelectedSeason,
+    resetPlayerPick, resetAllPlayerPicks, adjustEventBonusPoints, selectedSeason, setSelectedSeason,
   } = useApp();
 
   return (
@@ -834,6 +873,7 @@ const AdminView = () => {
               onAddOptionToMatch={addOptionToMatch}
               onResetPlayerPick={resetPlayerPick}
               onResetAllPlayerPicks={resetAllPlayerPicks}
+              onAdjustEventBonusPoints={adjustEventBonusPoints}
               players={players}
               animationDelay={`${index * 80}ms`}
               isMinimized={minimizedEvents.includes(event.id)}

@@ -26,7 +26,8 @@ const EventStandingsView = () => {
             if (match.winner && player.picks && player.picks[pickKey] === match.winner) score += 1;
           });
         }
-        return { ...player, eventScore: score };
+        const eventBonus = player.eventBonusPoints?.[selectedEvent.id] || 0;
+        return { ...player, eventScore: score + eventBonus, eventBonus };
       });
     }
     return scores.sort((a, b) => b.eventScore - a.eventScore);

@@ -129,6 +129,11 @@ const StandingsView = () => {
                             <span className={`text-sm font-bold tabular-nums w-12 text-right ${entry.score > 0 ? 'text-[--gold]' : 'text-[--text-muted]'}`}>
                               {entry.score}/{entry.totalMatches}
                             </span>
+                            {entry.eventBonus !== undefined && entry.eventBonus !== 0 && (
+                              <span className={`text-xs font-bold w-8 text-right ${entry.eventBonus > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {entry.eventBonus > 0 ? '+' : ''}{entry.eventBonus}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}

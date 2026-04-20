@@ -39,7 +39,11 @@ export const calculateTotalPoints = (player, allEvents) => {
       }
     }
   });
-  return historicalTotal + firebaseTotal + (player.bonusPoints || 0);
+  let eventBonusTotal = 0;
+  if (player.eventBonusPoints) {
+    Object.values(player.eventBonusPoints).forEach(pts => { eventBonusTotal += pts; });
+  }
+  return historicalTotal + firebaseTotal + (player.bonusPoints || 0) + eventBonusTotal;
 };
 
 export const getPlayerBreakdown = (player, allEvents) => {
@@ -62,7 +66,8 @@ export const getPlayerBreakdown = (player, allEvents) => {
           const pickKey = `${event.id}-${match.id}`;
           if (match.winner && player.picks?.[pickKey] === match.winner) score += 1;
         });
-        breakdown.push({ eventName: event.name, score, totalMatches: event.matches.length, type: 'firebase' });
+        const eventBonus = player.eventBonusPoints?.[event.id] || 0;
+        breakdown.push({ eventName: event.name, eventId: event.id, score, totalMatches: event.matches.length, type: 'firebase', eventBonus });
       }
     }
   });

@@ -5,34 +5,36 @@ import { useApp } from '../context/AppContext';
 /* ──────────────────────────────────────────────
    Inductee Card — uniform winner display
    ────────────────────────────────────────────── */
-const InducteeCard = ({ entry, index, isLatest, category }) => {
+const InducteeCard = ({ entry, index, category }) => {
   const isPredictamania = category === 'mr-predictamania';
+  const isReigning = entry.reigning === true;
 
   return (
     <div
       className={`group relative rounded-2xl overflow-hidden animate-fadeInUp flex flex-col ${
-        isLatest ? 'ring-2 ring-[--gold]/60 shadow-lg shadow-[--gold-glow]' : 'border border-[--border] gold-border-glow'
+        isReigning ? 'ring-2 ring-sky-400/70' : 'border border-[--border] gold-border-glow'
       } hover-lift`}
       style={{
         background: 'var(--bg-surface)',
         animationDelay: `${index * 100}ms`,
+        ...(isReigning ? { boxShadow: '0 10px 30px rgba(59, 130, 246, 0.25)' } : {}),
       }}
     >
       {/* Spotlight sweep on reigning champ */}
-      {isLatest && (
+      {isReigning && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
           <div
-            className="absolute top-0 left-0 w-1/3 h-full opacity-10"
+            className="absolute top-0 left-0 w-1/3 h-full opacity-15"
             style={{
-              background: 'linear-gradient(90deg, transparent, var(--gold-light), transparent)',
+              background: 'linear-gradient(90deg, transparent, #93c5fd, transparent)',
               animation: 'spotlight 4s linear infinite',
             }}
           />
         </div>
       )}
 
-      {/* Gold top bar for reigning champ */}
-      {isLatest && <div className="h-1 gold-bar-shimmer" />}
+      {/* Blue top bar for reigning champ */}
+      {isReigning && <div className="h-1 blue-bar-shimmer" />}
 
       {/* Image area — consistent aspect ratio */}
       <div className="relative aspect-[4/3] overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
@@ -63,9 +65,9 @@ const InducteeCard = ({ entry, index, isLatest, category }) => {
         )}
 
         {/* Reigning champion badge */}
-        {isLatest && (
+        {isReigning && (
           <div className="absolute top-3 left-3 z-10">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider text-[--gold]"
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider text-sky-300"
               style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
               <Star className="w-3 h-3" /> Reigning
             </span>
@@ -75,24 +77,24 @@ const InducteeCard = ({ entry, index, isLatest, category }) => {
         {/* Icon */}
         <div className="absolute bottom-3 left-3 z-10">
           {isPredictamania
-            ? <Crown className="w-6 h-6 text-[--gold]" style={{ animation: 'float 3s ease-in-out infinite' }} />
-            : <Award className="w-6 h-6 text-[--gold]" style={{ animation: 'float 3s ease-in-out infinite' }} />}
+            ? <Crown className={`w-6 h-6 ${isReigning ? 'text-sky-300' : 'text-[--gold]'}`} style={{ animation: 'float 3s ease-in-out infinite' }} />
+            : <Award className={`w-6 h-6 ${isReigning ? 'text-sky-300' : 'text-[--gold]'}`} style={{ animation: 'float 3s ease-in-out infinite' }} />}
         </div>
 
         {/* Corner accents for reigning champ */}
-        {isLatest && (
+        {isReigning && (
           <>
-            <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-[--gold]/40 z-10" />
-            <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 border-[--gold]/40 z-10" />
-            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 border-[--gold]/40 z-10" />
-            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-[--gold]/40 z-10" />
+            <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-sky-400/50 z-10" />
+            <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 border-sky-400/50 z-10" />
+            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 border-sky-400/50 z-10" />
+            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-sky-400/50 z-10" />
           </>
         )}
       </div>
 
       {/* Info */}
       <div className="p-5 text-center flex-1 flex flex-col justify-center">
-        <h4 className={`font-bebas tracking-wide text-white leading-none ${isLatest ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>
+        <h4 className={`font-bebas tracking-wide text-white leading-none ${isReigning ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>
           {entry.title}
         </h4>
         {entry.description && (
@@ -136,7 +138,6 @@ const CategorySection = ({ title, subtitle, icon: Icon, entries, accentClass }) 
               key={entry.id}
               entry={entry}
               index={idx}
-              isLatest={idx === 0}
               category={entry.category}
             />
           ))}

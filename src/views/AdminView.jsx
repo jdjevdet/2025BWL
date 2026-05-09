@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Plus, Edit2, Trash2, Save, Award, Users, ChevronUp, ChevronDown, X, Shield, Camera, KeyRound, Crown, Swords, Megaphone } from 'lucide-react';
+import { Trophy, Plus, Edit2, Trash2, Save, Award, Users, ChevronUp, ChevronDown, X, Shield, Camera, KeyRound, Crown, Swords, Megaphone, Star } from 'lucide-react';
 import { doc, setDoc, deleteField } from "firebase/firestore";
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -634,7 +634,7 @@ const HallOfFameManagement = () => {
     hallOfFameEntries, isHallOfFameMinimized, setIsHallOfFameMinimized,
     addHallOfFameEntry, updateHallOfFameEntry, deleteHallOfFameEntry,
   } = useApp();
-  const emptyEntry = { title: '', description: '', category: 'mr-predictamania', season: '2025/2026', imageFile: null, imageUrl: '' };
+  const emptyEntry = { title: '', description: '', category: 'mr-predictamania', season: '2025/2026', reigning: false, imageFile: null, imageUrl: '' };
   const [newEntry, setNewEntry] = useState(emptyEntry);
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [localEditingData, setLocalEditingData] = useState(null);
@@ -734,6 +734,26 @@ const HallOfFameManagement = () => {
                 </select>
               </div>
             </div>
+            <label
+              className={`flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border mb-2 cursor-pointer transition-all ${
+                currentData?.reigning ? 'border-sky-400/50 bg-sky-500/[0.06]' : 'border-[--border]'
+              }`}
+              style={!currentData?.reigning ? { background: 'var(--bg-input)' } : undefined}
+            >
+              <div className="flex items-center gap-2">
+                <Star className={`w-4 h-4 ${currentData?.reigning ? 'text-sky-300' : 'text-[--text-muted]'}`} />
+                <span className={`text-sm font-medium ${currentData?.reigning ? 'text-sky-200' : 'text-white'}`}>
+                  Reigning Champion
+                </span>
+                <span className="text-[10px] text-[--text-muted]">Adds blue shimmer outline on Hall of Fame</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={!!currentData?.reigning}
+                onChange={(e) => setCurrentData(prev => ({ ...prev, reigning: e.target.checked }))}
+                className="w-4 h-4 accent-sky-500"
+              />
+            </label>
             <label className="block border-2 border-dashed border-[--border-light] rounded-lg p-4 text-center cursor-pointer hover:border-[--gold-dark] transition-all mb-3">
               <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               {(currentData?.imageUrl) ? (
@@ -772,10 +792,15 @@ const HallOfFameManagement = () => {
                   style={{ background: 'var(--bg-elevated)' }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    {entry.imageUrl && <img src={entry.imageUrl} alt={entry.title} className="w-10 h-10 object-cover rounded-lg border border-[--border] flex-shrink-0" />}
+                    {entry.imageUrl && <img src={entry.imageUrl} alt={entry.title} className={`w-10 h-10 object-cover rounded-lg flex-shrink-0 ${entry.reigning ? 'ring-2 ring-sky-400/70 border-0' : 'border border-[--border]'}`} />}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-white text-sm font-medium truncate">{entry.title}</p>
+                        {entry.reigning && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-sky-300 border border-sky-400/30 bg-sky-500/[0.08] flex-shrink-0">
+                            <Star className="w-2.5 h-2.5" /> Reigning
+                          </span>
+                        )}
                         {entry.season && <span className="text-[10px] text-[--text-muted] flex-shrink-0">{entry.season}</span>}
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">

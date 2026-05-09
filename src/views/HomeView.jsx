@@ -363,7 +363,7 @@ const HomeView = () => {
             <span className="gold-shimmer">WRESTLING LEAGUE</span>
           </h1>
           <p className="font-outfit text-lg text-[--text-secondary] max-w-md mx-auto">
-            Fantasy Picks &mdash; Make your predictions and prove you know wrestling better than everyone else.
+            Fantasy Picks &mdash; Where every armchair booker thinks he's the smartest mark in the room.
           </p>
           <div className="rope-divider max-w-xs mx-auto mt-8" />
 

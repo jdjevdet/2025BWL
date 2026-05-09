@@ -9,7 +9,8 @@ const EventStandingsView = () => {
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   if (!selectedEvent) return null;
-  const isHistorical = historicalEventNames.includes(selectedEvent.name.toUpperCase());
+  const eventSeason = selectedEvent.season || '2025/2026';
+  const isHistorical = eventSeason === '2025/2026' && historicalEventNames.includes(selectedEvent.name.toUpperCase());
   const picksVisible = selectedEvent.status === 'live' || selectedEvent.status === 'completed' || isHistorical;
 
   const playerScores = useMemo(() => {

@@ -31,7 +31,9 @@ export const calculateTotalPoints = (player, allEvents, season) => {
   }
   let firebaseTotal = 0;
   allEvents.forEach(event => {
-    if (!historicalEventNames.includes(event.name.toUpperCase())) {
+    const evSeason = event.season || '2025/2026';
+    const isLegacyHistorical = evSeason === '2025/2026' && historicalEventNames.includes(event.name.toUpperCase());
+    if (!isLegacyHistorical) {
       if ((event.status === 'completed' || event.status === 'live') && event.matches) {
         event.matches.forEach(match => {
           const pickKey = `${event.id}-${match.id}`;
@@ -65,7 +67,9 @@ export const getPlayerBreakdown = (player, allEvents, season) => {
     });
   }
   allEvents.forEach(event => {
-    if (!historicalEventNames.includes(event.name.toUpperCase())) {
+    const evSeason = event.season || '2025/2026';
+    const isLegacyHistorical = evSeason === '2025/2026' && historicalEventNames.includes(event.name.toUpperCase());
+    if (!isLegacyHistorical) {
       if ((event.status === 'completed' || event.status === 'live') && event.matches && event.matches.length > 0) {
         const hasPicks = event.matches.some(m => player.picks?.[`${event.id}-${m.id}`]);
         const isSubmitted = event.submittedPlayers?.includes(player.name);

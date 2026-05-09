@@ -20,9 +20,10 @@ export const historicalTotalMatches = {
 
 export const historicalEventNames = Object.keys(historicalScores);
 
-export const calculateTotalPoints = (player, allEvents) => {
+export const calculateTotalPoints = (player, allEvents, season) => {
+  const includeLegacy = !season || season === '2025/2026';
   let historicalTotal = 0;
-  if (player.name) {
+  if (includeLegacy && player.name) {
     historicalEventNames.forEach(eventName => {
       if (historicalScores[eventName]?.[player.name] !== undefined)
         historicalTotal += historicalScores[eventName][player.name];
@@ -41,20 +42,28 @@ export const calculateTotalPoints = (player, allEvents) => {
   });
   let eventBonusTotal = 0;
   if (player.eventBonusPoints) {
-    Object.values(player.eventBonusPoints).forEach(pts => { eventBonusTotal += pts; });
+    if (season) {
+      allEvents.forEach(event => { eventBonusTotal += player.eventBonusPoints[event.id] || 0; });
+    } else {
+      Object.values(player.eventBonusPoints).forEach(pts => { eventBonusTotal += pts; });
+    }
   }
-  return historicalTotal + firebaseTotal + (player.bonusPoints || 0) + eventBonusTotal;
+  const globalBonus = includeLegacy ? (player.bonusPoints || 0) : 0;
+  return historicalTotal + firebaseTotal + globalBonus + eventBonusTotal;
 };
 
-export const getPlayerBreakdown = (player, allEvents) => {
+export const getPlayerBreakdown = (player, allEvents, season) => {
+  const includeLegacy = !season || season === '2025/2026';
   const breakdown = [];
-  historicalEventNames.forEach(eventName => {
-    const score = historicalScores[eventName]?.[player.name];
-    if (score !== undefined) {
-      const maxScore = Math.max(...Object.values(historicalScores[eventName]));
-      breakdown.push({ eventName, score, totalMatches: maxScore, type: 'historical' });
-    }
-  });
+  if (includeLegacy) {
+    historicalEventNames.forEach(eventName => {
+      const score = historicalScores[eventName]?.[player.name];
+      if (score !== undefined) {
+        const maxScore = Math.max(...Object.values(historicalScores[eventName]));
+        breakdown.push({ eventName, score, totalMatches: maxScore, type: 'historical' });
+      }
+    });
+  }
   allEvents.forEach(event => {
     if (!historicalEventNames.includes(event.name.toUpperCase())) {
       if ((event.status === 'completed' || event.status === 'live') && event.matches && event.matches.length > 0) {

@@ -26,7 +26,7 @@ export const AppProvider = ({ children }) => {
   const [players, setPlayers] = useState([]);
   const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [selectedSeason, setSelectedSeason] = useState('2025/2026');
+  const [selectedSeason, setSelectedSeason] = useState('2026/2027');
   const [banner, setBanner] = useState(null);
 
   // Firebase subscriptions

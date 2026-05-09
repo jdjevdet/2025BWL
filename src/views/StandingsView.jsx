@@ -17,7 +17,7 @@ const StandingsView = () => {
   const sortedPlayers = allPlayerNames
     .map(name => {
       const playerObject = players.find(p => p.name === name) || { name, id: name };
-      return { ...playerObject, totalPoints: calculateTotalPoints(playerObject, sortedEvents) };
+      return { ...playerObject, totalPoints: calculateTotalPoints(playerObject, sortedEvents, selectedSeason) };
     })
     .sort((a, b) => b.totalPoints - a.totalPoints);
 
@@ -70,8 +70,8 @@ const StandingsView = () => {
               'podium-bronze shadow-lg shadow-orange-500/10',
             ];
             const isExpanded = expandedPlayer === player.id;
-            const breakdown = isExpanded ? getPlayerBreakdown(player, sortedEvents) : [];
-            const bonusPoints = player.bonusPoints || 0;
+            const breakdown = isExpanded ? getPlayerBreakdown(player, sortedEvents, selectedSeason) : [];
+            const bonusPoints = selectedSeason === '2025/2026' ? (player.bonusPoints || 0) : 0;
 
             return (
               <div key={player.id} className="animate-fadeInUp" style={{ animationDelay: `${idx * 60}ms` }}>
